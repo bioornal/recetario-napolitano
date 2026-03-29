@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+@theme {
+  --color-dark-bg: #1a1410;
+  --color-dark-card: #2a2118;
+  --color-dark-surface: #332820;
+  --color-dark-border: #3d3228;
+  
+  --color-accent-gold: #e8a665;
+  --color-accent-amber: #d4843e;
+  
+  --color-text-main: #f0e6da;
+  --color-text-muted: #a89880;
+  
+  --color-status-danger: #d45050;
+  --color-status-success: #6bb86a;
+}
+
+body {
+  @apply bg-dark-bg text-text-main font-sans min-h-screen selection:bg-accent-amber/30 selection:text-white;
+}
+
+/* Custom slider thumb */
+input[type="range"] {
+  @apply h-1.5 bg-dark-border rounded-full appearance-none outline-none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  @apply appearance-none w-6 h-6 bg-accent-amber rounded-full cursor-pointer hover:bg-accent-gold hover:scale-110 active:scale-95 transition-all shadow-[0_0_15px_rgba(212,132,62,0.4)];
+}
+input[type="range"]::-moz-range-thumb {
+  @apply w-6 h-6 bg-accent-amber rounded-full cursor-pointer hover:bg-accent-gold hover:scale-110 active:scale-95 transition-all outline-none border-none shadow-[0_0_15px_rgba(212,132,62,0.4)];
+}
+
+/* Glassmorphism utilities */
+.glass-panel {
+  @apply bg-dark-card/80 backdrop-blur-md border border-dark-border shadow-xl;
+}
+
+.glass-accent {
+  @apply bg-accent-amber/10 border-accent-amber/20 backdrop-blur-sm;
+}

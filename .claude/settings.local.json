@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git:*)",
+      "Bash(node -e \":*)",
+      "WebSearch",
+      "WebFetch(domain:www.fermentation-calculator.com)",
+      "WebFetch(domain:www.pizzablab.com)",
+      "WebFetch(domain:www.pizzanapoletana.org)",
+      "WebFetch(domain:beananimal.com)",
+      "WebFetch(domain:www.pizzamaking.com)",
+      "WebFetch(domain:www.tamaslorincz.com)",
+      "WebFetch(domain:www.dough.school)",
+      "WebFetch(domain:www.fabioulouspizza.com)",
+      "WebFetch(domain:www.weekendbakery.com)",
+      "WebFetch(domain:yeasto.app)",
+      "WebFetch(domain:bionumbers.hms.harvard.edu)",
+      "WebFetch(domain:www.kingarthurbaking.com)",
+      "WebFetch(domain:modernistcuisine.com)",
+      "WebFetch(domain:www.stadlermade.com)"
+    ]
+  }
+}
