@@ -37,7 +37,7 @@ import Layout from '../layouts/Layout.astro';
               <input type="range" id="hydrationRange" min="50" max="75" step="1" value="58" class="w-full relative z-10 transition-all">
             </div>
           </div>
-          <div class="flex flex-col gap-1">
+          <div class="flex flex-col gap-1" id="hoursContainer">
             <label for="fermentHours" class="text-[0.68rem] font-semibold text-text-muted uppercase tracking-wider">Frío (horas)</label>
             <select id="fermentHours" class="bg-dark-surface border border-dark-border text-text-main py-2.5 px-3 rounded-xl text-base font-bold focus:ring-2 focus:ring-accent-amber/50 focus:border-accent-amber outline-none transition-all appearance-none cursor-pointer">
               <option value="24">24 horas</option>
@@ -58,10 +58,12 @@ import Layout from '../layouts/Layout.astro';
         <h2 class="text-xs uppercase tracking-[0.15em] text-accent-amber font-bold mb-3 flex items-center gap-2">
             <span class="w-1.5 h-1.5 rounded-full bg-accent-amber"></span> Método
         </h2>
-        <div class="flex p-1 bg-dark-bg rounded-xl border border-dark-border mb-3 relative" id="methodToggleGroup">
-          <button class="flex-1 py-2.5 text-sm font-bold rounded-lg text-text-muted hover:text-text-main transition-colors z-10 method-btn" data-method="direct">Directo</button>
-          <button class="flex-1 py-2.5 text-sm font-bold rounded-lg text-text-muted hover:text-text-main transition-colors z-10 method-btn" data-method="poolish">Con Poolish</button>
-          <div class="absolute left-1 top-1 bottom-1 w-[calc(50%-4px)] bg-accent-amber rounded-lg shadow-md transition-transform duration-300 ease-in-out" id="methodSlider"></div>
+        <div class="flex p-0.5 sm:p-1 bg-dark-bg rounded-xl border border-dark-border mb-3 relative" id="methodToggleGroup">
+          <button class="flex-1 py-3 text-[0.65rem] sm:text-xs font-bold rounded-lg text-text-muted hover:text-text-main transition-colors z-10 method-btn" data-method="direct">Napolitana</button>
+          <button class="flex-1 py-3 text-[0.65rem] sm:text-xs font-bold rounded-lg text-text-muted hover:text-text-main transition-colors z-10 method-btn" data-method="poolish">N. Poolish</button>
+          <button class="flex-1 py-3 text-[0.65rem] sm:text-xs font-bold rounded-lg text-text-muted hover:text-text-main transition-colors z-10 method-btn" data-method="piedra">Arg Piedra</button>
+          <button class="flex-1 py-3 text-[0.65rem] sm:text-xs font-bold rounded-lg text-text-muted hover:text-text-main transition-colors z-10 method-btn" data-method="molde">Arg Molde</button>
+          <div class="absolute left-1 top-1 bottom-1 w-[calc(25%-2px)] bg-accent-amber rounded-lg shadow-md transition-all duration-300 ease-in-out" id="methodSlider"></div>
         </div>
         
         <div id="poolishConfig" class="overflow-hidden transition-all duration-300 max-h-0 opacity-0 border-t border-dark-border/0 mt-0 pt-0">
@@ -123,7 +125,7 @@ import Layout from '../layouts/Layout.astro';
 </Layout>
 
 <script>
-  import { calculateYeast, calculatePoolishYeast, poolishRapidTime, temperingTime, waterTemp, formatMinutes, fmt } from '../utils/math';
+  import { calculateYeast, calculatePoolishYeast, poolishRapidTime, temperingTime, waterTemp, formatMinutes, fmt, calculatePiedraYeast, calculateMoldeYeast, piedraFirstFermentTime, piedraSecondFermentTime, moldeFirstFermentTime, moldeSecondFermentTime } from '../utils/math';
 
   // State Management
   let state = {
@@ -169,7 +171,7 @@ import Layout from '../layouts/Layout.astro';
       btn.addEventListener('click', () => {
         state.method = (btn as HTMLElement).dataset.method;
         
-        UI.methodSlider.style.transform = index === 1 ? 'translateX(100%)' : 'translateX(0)';
+        UI.methodSlider.style.transform = `translateX(${index * 100}%)`;
         UI.methodBtns.forEach(b => {
             b.classList.remove('text-dark-bg', 'text-text-main');
             b.classList.add('text-text-muted');
@@ -251,15 +253,33 @@ import Layout from '../layouts/Layout.astro';
         s.classList.remove('invisible', 'opacity-0');
     });
 
+    const isArgentine = state.method === 'piedra' || state.method === 'molde';
+    if (isArgentine) {
+        document.getElementById('hoursContainer').style.opacity = '0.4';
+        document.getElementById('hoursContainer').style.pointerEvents = 'none';
+        document.getElementById('tempAdvisory').style.display = 'none'; // ocultar advertencias de frio
+    } else {
+        document.getElementById('hoursContainer').style.opacity = '1';
+        document.getElementById('hoursContainer').style.pointerEvents = 'auto';
+        document.getElementById('tempAdvisory').style.display = 'block';
+    }
+
     renderSummary(temperMin);
     
     if (state.method === 'direct') {
         renderDirect(flour, strongFlour, wholeWheat, water, salt, oil, temperMin, wTemp);
         renderDirectSteps(temperMin, wTemp);
-    } else {
+    } else if (state.method === 'poolish') {
         renderPoolish(flour, strongFlour, wholeWheat, water, salt, oil, temperMin, wTemp);
+    } else if (state.method === 'piedra') {
+        renderPiedra(flour, strongFlour, wholeWheat, water, salt, oil, wTemp);
+    } else if (state.method === 'molde') {
+        renderMolde(flour, strongFlour, wholeWheat, water, salt, oil, wTemp);
     }
-    renderTempAdvisory(wTemp, temperMin);
+    
+    if (!isArgentine) {
+        renderTempAdvisory(wTemp, temperMin);
+    }
   }
 
   // --- Render HTML Builders
@@ -275,11 +295,17 @@ import Layout from '../layouts/Layout.astro';
   }
   
   function renderSummary(temperMin) {
+    const isArgentine = state.method === 'piedra' || state.method === 'molde';
+    const frioHtml = isArgentine ? 
+      `<span class="px-3.5 py-1.5 rounded-full bg-dark-surface border border-dark-border text-xs font-medium text-text-muted border-l-2 border-l-accent-amber"><strong class="text-accent-gold">Directa</strong></span>` 
+      : `<span class="px-3.5 py-1.5 rounded-full bg-dark-surface border border-dark-border text-xs font-medium text-text-muted border-l-2 border-l-accent-amber">Frío <strong class="text-accent-gold">${state.hours}h</strong></span>`;
+    const atemperHtml = isArgentine ? '' : `<span class="px-3.5 py-1.5 rounded-full bg-dark-surface border border-dark-border text-xs font-medium text-text-muted border-l-2 border-l-accent-amber">Atempera en <strong class="text-accent-gold">${formatMinutes(temperMin)}</strong></span>`;
+
     UI.summaryBar.innerHTML = `
       <span class="px-3.5 py-1.5 rounded-full bg-dark-surface border border-dark-border text-xs font-medium text-text-muted border-l-2 border-l-accent-amber"><strong class="text-accent-gold">${state.balls}</strong> x <strong class="text-accent-gold">${state.weight}g</strong></span>
-      <span class="px-3.5 py-1.5 rounded-full bg-dark-surface border border-dark-border text-xs font-medium text-text-muted border-l-2 border-l-accent-amber">Frío <strong class="text-accent-gold">${state.hours}h</strong></span>
+      ${frioHtml}
       <span class="px-3.5 py-1.5 rounded-full bg-dark-surface border border-dark-border text-xs font-medium text-text-muted border-l-2 border-l-accent-amber">Ambiente <strong class="text-accent-gold">${state.temp}°C</strong></span>
-      <span class="px-3.5 py-1.5 rounded-full bg-dark-surface border border-dark-border text-xs font-medium text-text-muted border-l-2 border-l-accent-amber">Atempera en <strong class="text-accent-gold">${formatMinutes(temperMin)}</strong></span>
+      ${atemperHtml}
     `;
   }
 
@@ -351,6 +377,93 @@ import Layout from '../layouts/Layout.astro';
       `;
 
       renderPoolishSteps(temperMin, wTemp);
+  }
+
+  function renderPiedra(flour, strongFlour, wholeWheat, water, salt, oil, wTemp) {
+      const yeast = calculatePiedraYeast(flour, state.temp);
+      const total = strongFlour + wholeWheat + water + salt + oil + yeast;
+      
+      UI.resultsContent.innerHTML = `
+      <div class="bg-dark-surface/50 border border-dark-border rounded-xl p-5 shadow-inner mb-4">
+          <h3 class="text-xs uppercase tracking-widest text-text-muted mb-4 pb-2 border-b border-dark-border">Ingredientes A la Piedra</h3>
+          ${ingredientHTML('Harina Múltiple (000/0000)', strongFlour, '', '90%')}
+          ${ingredientHTML('Harina Integral', wholeWheat, '', '10%')}
+          ${ingredientHTML(`Agua (~${wTemp}°C)`, water, '', state.hydration+'%')}
+          ${ingredientHTML('Sal media fina / Gorda', salt, '', '2.5%')}
+          ${ingredientHTML('Aceite de oliva/Girasol', oil, '', '3%')}
+          ${ingredientHTML('Levadura fresca', yeast, 'text-accent-amber font-bold', (yeast/flour*100).toFixed(2)+'%')}
+          
+          <div class="flex justify-between items-end mt-4 pt-3 border-t-2 border-accent-amber/50">
+              <span class="text-sm font-bold text-accent-gold uppercase tracking-widest">Peso Total</span>
+              <span class="text-xl font-bold text-white">${fmt(total)}<span class="text-sm text-text-muted ml-1">g</span></span>
+          </div>
+      </div>
+      <div class="glass-accent rounded-lg p-4 mt-4 text-sm text-text-muted leading-relaxed">
+          <strong class="text-accent-gold block mb-1">Pizza a la Piedra (Clásica del día):</strong>
+          Preparada para consumir en corto tiempo a temperatura ambiente. Masa fina y crocante apoyada directo a la piedra del horno. Reducida carga de levadura frente a la de molde.
+      </div>`;
+
+      const tBlock = formatMinutes(piedraFirstFermentTime(state.temp));
+      const tBollos = formatMinutes(piedraSecondFermentTime(state.temp));
+      const st = [
+          `Disolver la levadura en agua a ~${wTemp}°C. Volcar sal y aceite antes de echar la harina.`,
+          `Incorporar harinas y amasar sostenidamente hasta formar un bollo liso, parejo y tenso.`,
+          `Poner en un bowl o taper cerrado en lugar cálido. Reposo en bloque por <strong>${tBlock}</strong>.`,
+          `Dividir la masa y bollar (${state.balls}x de ${state.weight}g).`,
+          `Dejar reposar los bollos en cajas o mesa enharinada y bien tapados por <strong>${tBollos}</strong>.`,
+          `Estirar con mano (o apenas de palo), armar rápido y al horno a temperatura brutal sobre la piedra de cocción.`
+      ];
+      
+      const stepsHTML = st.map((s,i) => `
+        <li class="relative pl-10 text-[0.88rem] leading-relaxed py-1.5 border-b border-dark-border/40 last:border-0">
+          <span class="absolute left-0 top-1.5 flex items-center justify-center w-6 h-6 rounded-full bg-accent-amber/20 text-accent-gold font-bold text-xs ring-1 ring-accent-amber/50">${i+1}</span>
+          ${s}
+        </li>`).join('');
+      UI.stepsList.innerHTML = stepsHTML;
+      UI.stepsListMobile.innerHTML = stepsHTML;
+  }
+
+  function renderMolde(flour, strongFlour, wholeWheat, water, salt, oil, wTemp) {
+      const yeast = calculateMoldeYeast(flour, state.temp);
+      const total = strongFlour + wholeWheat + water + salt + oil + yeast;
+      
+      UI.resultsContent.innerHTML = `
+      <div class="bg-dark-surface/50 border border-dark-border rounded-xl p-5 shadow-inner mb-4">
+          <h3 class="text-xs uppercase tracking-widest text-text-muted mb-4 pb-2 border-b border-dark-border">Ingredientes Al Molde</h3>
+          ${ingredientHTML('Harina Múltiple (000/0000)', strongFlour, '', '90%')}
+          ${ingredientHTML('Harina Integral', wholeWheat, '', '10%')}
+          ${ingredientHTML(`Agua (~${wTemp}°C)`, water, '', state.hydration+'%')}
+          ${ingredientHTML('Sal media fina / Gorda', salt, '', '2.5%')}
+          ${ingredientHTML('Aceite clásico', oil, '', '3%')}
+          ${ingredientHTML('Levadura fresca', yeast, 'text-accent-amber font-bold', (yeast/flour*100).toFixed(2)+'%')}
+          
+          <div class="flex justify-between items-end mt-4 pt-3 border-t-2 border-accent-amber/50">
+              <span class="text-sm font-bold text-accent-gold uppercase tracking-widest">Peso Total</span>
+              <span class="text-xl font-bold text-white">${fmt(total)}<span class="text-sm text-text-muted ml-1">g</span></span>
+          </div>
+      </div>
+      <div class="glass-accent rounded-lg p-4 mt-4 text-sm text-text-muted leading-relaxed">
+          <strong class="text-accent-gold block mb-1">Pizza al Molde (Alta y Esponjosa):</strong>
+          Fermentación doble alta. Alta cantidad de levadura biológica fresca para crecer veloz y atrapar mucho gas carbónico en la placa durante el leudo final.
+      </div>`;
+
+      const tBlock = formatMinutes(moldeFirstFermentTime(state.temp));
+      const tBollos = formatMinutes(moldeSecondFermentTime(state.temp));
+      const st = [
+          `Disolver mucha levadura fresca en agua tibia o templada a ~${wTemp}°C. Volcar también todo el aceite.`,
+          `Agregar casi toda la harina y sal. Amasar firmemente dando fuertes tirones unos 10 minutos.`,
+          `Bollar grande, pintar con aceite, cubrir con nylon grueso y dar reposo fuerte de unos <strong>${tBlock}</strong>.`,
+          `Desgasificar de un golpe, pesar y dividir (bollos de ${state.weight}g).`,
+          `Bollar ligeramente con mucha tensión superficial y acomodarlos en el centro de moldes pizzeros profusamente aceitados.`,
+          `Tapar las pizzeras con film/bolsas. Dejar desbordar inflando adentro mínimo <strong>${tBollos}</strong> antes de esparcir e ingresar al horno.`
+      ];
+      const stepsHTML = st.map((s,i) => `
+        <li class="relative pl-10 text-[0.88rem] leading-relaxed py-1.5 border-b border-dark-border/40 last:border-0">
+          <span class="absolute left-0 top-1.5 flex items-center justify-center w-6 h-6 rounded-full bg-accent-amber/20 text-accent-gold font-bold text-xs ring-1 ring-accent-amber/50">${i+1}</span>
+          ${s}
+        </li>`).join('');
+      UI.stepsList.innerHTML = stepsHTML;
+      UI.stepsListMobile.innerHTML = stepsHTML;
   }
 
   function alertCard(title, text, type) {

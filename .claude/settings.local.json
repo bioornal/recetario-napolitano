@@ -17,7 +17,9 @@
       "WebFetch(domain:bionumbers.hms.harvard.edu)",
       "WebFetch(domain:www.kingarthurbaking.com)",
       "WebFetch(domain:modernistcuisine.com)",
-      "WebFetch(domain:www.stadlermade.com)"
+      "WebFetch(domain:www.stadlermade.com)",
+      "Bash(find ./src -type f -name *.css)",
+      "Bash(find . -maxdepth 2 -type d ! -path */node_modules* ! -path */.git*)"
     ]
   }
 }

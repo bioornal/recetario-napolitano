@@ -185,3 +185,57 @@ export function fmt(g: number): string {
   if (g < 10) return g.toFixed(1);
   return Math.round(g).toString();
 }
+
+// ─── PIZZA ARGENTINA: Al Molde ───
+// Clásico rápido: ~3-4% fresca base a 22°C (proceso completo de ~3-4 horas)
+export function calculateMoldeYeast(flourWeight: number, tempC: number): number {
+  const basePct = 0.035; // 3.5% fresca a 22°C
+  const factor = yeastTempFactor(tempC, 22);
+  const clampedFactor = Math.max(
+    yeastTempFactor(14, 22),
+    Math.min(yeastTempFactor(38, 22), factor)
+  );
+  let yeast = flourWeight * basePct / clampedFactor;
+  yeast = Math.max(yeast, 0.3);
+  yeast = Math.min(yeast, flourWeight * 0.06); 
+  return yeast;
+}
+
+export function moldeFirstFermentTime(tempC: number): number {
+  const base = 120; // 2 horas en bloque
+  const factor = yeastTempFactor(Math.max(14, Math.min(38, tempC)), 22);
+  return Math.max(60, Math.min(300, Math.round(base / factor)));
+}
+
+export function moldeSecondFermentTime(tempC: number): number {
+  const base = 60; // 1 hora en molde
+  const factor = yeastTempFactor(Math.max(14, Math.min(38, tempC)), 22);
+  return Math.max(30, Math.min(150, Math.round(base / factor)));
+}
+
+// ─── PIZZA ARGENTINA: A la Piedra ───
+// Reposo moderado: ~1.5% fresca base a 22°C (proceso de ~4-6 horas)
+export function calculatePiedraYeast(flourWeight: number, tempC: number): number {
+  const basePct = 0.015; // 1.5% fresca a 22°C
+  const factor = yeastTempFactor(tempC, 22);
+  const clampedFactor = Math.max(
+    yeastTempFactor(14, 22),
+    Math.min(yeastTempFactor(38, 22), factor)
+  );
+  let yeast = flourWeight * basePct / clampedFactor;
+  yeast = Math.max(yeast, 0.3);
+  yeast = Math.min(yeast, flourWeight * 0.03); 
+  return yeast;
+}
+
+export function piedraFirstFermentTime(tempC: number): number {
+  const base = 180; // 3 horas en bloque
+  const factor = yeastTempFactor(Math.max(14, Math.min(38, tempC)), 22);
+  return Math.max(90, Math.min(420, Math.round(base / factor)));
+}
+
+export function piedraSecondFermentTime(tempC: number): number {
+  const base = 60; // 1 hora bollos antes de estirar
+  const factor = yeastTempFactor(Math.max(14, Math.min(38, tempC)), 22);
+  return Math.max(30, Math.min(180, Math.round(base / factor)));
+}
