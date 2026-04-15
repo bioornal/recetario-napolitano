@@ -21,12 +21,20 @@ import Layout from '../layouts/Layout.astro';
         </h2>
         <div class="grid grid-cols-2 gap-x-4 gap-y-4">
           <div class="flex flex-col gap-1">
-            <label for="ballCount" class="text-[0.68rem] font-semibold text-text-muted uppercase tracking-wider">Bollos</label>
-            <input type="number" id="ballCount" value="4" min="1" max="100" class="bg-dark-surface border border-dark-border text-text-main py-2.5 px-3 rounded-xl text-base font-bold focus:ring-2 focus:ring-accent-amber/50 focus:border-accent-amber outline-none transition-all shadow-inner">
+            <label class="text-[0.68rem] font-semibold text-text-muted uppercase tracking-wider">Bollos</label>
+            <div class="drum-roller" data-target="ballCount" data-min="1" data-max="100" data-step="1">
+              <div class="drum-track"></div>
+              <div class="drum-highlight"></div>
+            </div>
+            <input type="hidden" id="ballCount" value="3">
           </div>
           <div class="flex flex-col gap-1">
-            <label for="ballWeight" class="text-[0.68rem] font-semibold text-text-muted uppercase tracking-wider">Peso (g)</label>
-            <input type="number" id="ballWeight" value="230" min="100" max="400" step="10" class="bg-dark-surface border border-dark-border text-text-main py-2.5 px-3 rounded-xl text-base font-bold focus:ring-2 focus:ring-accent-amber/50 focus:border-accent-amber outline-none transition-all shadow-inner">
+            <label class="text-[0.68rem] font-semibold text-text-muted uppercase tracking-wider">Peso (g)</label>
+            <div class="drum-roller" data-target="ballWeight" data-min="100" data-max="400" data-step="10">
+              <div class="drum-track"></div>
+              <div class="drum-highlight"></div>
+            </div>
+            <input type="hidden" id="ballWeight" value="250">
           </div>
           <div class="flex flex-col gap-1 col-span-2">
             <div class="flex justify-between items-center">
@@ -47,8 +55,12 @@ import Layout from '../layouts/Layout.astro';
             </select>
           </div>
           <div class="flex flex-col gap-1">
-            <label for="ambientTemp" class="text-[0.68rem] font-semibold text-text-muted uppercase tracking-wider">Temp. °C</label>
-            <input type="number" id="ambientTemp" value="22" min="-5" max="45" step="1" class="bg-dark-surface border border-dark-border text-text-main py-2.5 px-3 rounded-xl text-base font-bold focus:ring-2 focus:ring-accent-amber/50 focus:border-accent-amber outline-none transition-all shadow-inner">
+            <label class="text-[0.68rem] font-semibold text-text-muted uppercase tracking-wider">Temp. °C</label>
+            <div class="drum-roller" data-target="ambientTemp" data-min="-5" data-max="45" data-step="1">
+              <div class="drum-track"></div>
+              <div class="drum-highlight"></div>
+            </div>
+            <input type="hidden" id="ambientTemp" value="22">
           </div>
         </div>
       </section>
@@ -130,8 +142,8 @@ import Layout from '../layouts/Layout.astro';
   // State Management
   let state = {
     method: 'direct',
-    balls: 4,
-    weight: 230,
+    balls: 3,
+    weight: 250,
     hydration: 58,
     hours: 48,
     temp: 22,
@@ -654,8 +666,86 @@ import Layout from '../layouts/Layout.astro';
       UI.stepsListMobile.innerHTML = stepsHTML;
   }
 
+  // Drum Rollers
+  function initDrumRollers() {
+    const ITEM_H = 36;
+
+    document.querySelectorAll<HTMLElement>('.drum-roller').forEach(roller => {
+      const targetId = roller.dataset.target!;
+      const min = parseFloat(roller.dataset.min!);
+      const max = parseFloat(roller.dataset.max!);
+      const step = parseFloat(roller.dataset.step!);
+      const hiddenInput = document.getElementById(targetId) as HTMLInputElement;
+      const track = roller.querySelector('.drum-track') as HTMLElement;
+
+      // Build items
+      const items: number[] = [];
+      for (let v = min; v <= max + 0.001; v += step) {
+        items.push(Math.round(v * 1000) / 1000);
+      }
+
+      // Populate DOM
+      items.forEach(v => {
+        const div = document.createElement('div');
+        div.className = 'drum-item';
+        div.textContent = String(v);
+        track.appendChild(div);
+      });
+
+      const allItems = track.querySelectorAll<HTMLElement>('.drum-item');
+
+      function getIndex(v: number) {
+        return Math.max(0, items.findIndex(x => Math.abs(x - v) < 0.001));
+      }
+
+      function scrollToIndex(idx: number, smooth = false) {
+        track.scrollTo({ top: idx * ITEM_H, behavior: smooth ? 'smooth' : 'instant' });
+      }
+
+      function highlightIndex(idx: number) {
+        allItems.forEach((el, i) => el.classList.toggle('drum-item-active', i === idx));
+      }
+
+      function commitScroll() {
+        const idx = Math.max(0, Math.min(items.length - 1, Math.round(track.scrollTop / ITEM_H)));
+        scrollToIndex(idx, true);
+        highlightIndex(idx);
+        const v = items[idx];
+        if (String(v) !== hiddenInput.value) {
+          hiddenInput.value = String(v);
+          hiddenInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      }
+
+      // Init scroll position
+      const initIdx = getIndex(parseFloat(hiddenInput.value));
+      scrollToIndex(initIdx);
+      highlightIndex(initIdx);
+
+      // Scroll end: native + timeout fallback
+      let scrollTimer: ReturnType<typeof setTimeout>;
+      track.addEventListener('scroll', () => {
+        clearTimeout(scrollTimer);
+        scrollTimer = setTimeout(commitScroll, 120);
+      });
+      track.addEventListener('scrollend', () => {
+        clearTimeout(scrollTimer);
+        commitScroll();
+      });
+
+      // Mouse wheel on roller container (desktop)
+      roller.addEventListener('wheel', (e: WheelEvent) => {
+        e.preventDefault();
+        const idx = Math.max(0, Math.min(items.length - 1, Math.round(track.scrollTop / ITEM_H)));
+        const next = idx + (e.deltaY > 0 ? 1 : -1);
+        scrollToIndex(Math.max(0, Math.min(items.length - 1, next)), true);
+      }, { passive: false });
+    });
+  }
+
   // Startup
   document.addEventListener('DOMContentLoaded', () => {
+    initDrumRollers();
     setupListeners();
     recalc();
   });
