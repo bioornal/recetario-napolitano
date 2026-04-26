@@ -1,756 +1,88 @@
 ---
+export const prerender = true;
 import Layout from '../layouts/Layout.astro';
 ---
-
-<Layout>
-  <header class="text-center py-6 lg:py-8 mb-4 lg:mb-6 border-b border-dark-border/50 relative">
-    <h1 class="font-['Outfit'] text-3xl sm:text-4xl font-bold bg-gradient-to-r from-accent-gold to-accent-amber text-transparent bg-clip-text tracking-wide mb-2">CALCULADORA DE MASA</h1>
-    <p class="text-sm font-medium text-text-muted uppercase tracking-widest">Pizza Napoletana Híbrida &bull; Estilo Argentino</p>
+<Layout title="Dashboard">
+  <header class="text-center py-6 mb-6 border-b border-dark-border/50">
+    <h1 class="font-['Outfit'] text-3xl font-bold bg-gradient-to-r from-accent-gold to-accent-amber text-transparent bg-clip-text mb-1">El Fogon</h1>
+    <p class="text-sm text-text-muted uppercase tracking-widest">Dashboard de Pizzería</p>
   </header>
 
-  <!-- ═══ TWO COLUMN DASHBOARD (lg+) ═══ -->
-  <div class="lg:grid lg:grid-cols-12 lg:gap-6">
-
-    <!-- ══ LEFT COLUMN: Controls ══ -->
-    <div class="lg:col-span-5 space-y-4 lg:space-y-5">
-
-      <!-- Config -->
-      <section class="glass-panel rounded-2xl p-4 sm:p-5 lg:p-5">
-        <h2 class="text-xs uppercase tracking-[0.15em] text-accent-amber font-bold mb-4 flex items-center gap-2">
-          <span class="w-1.5 h-1.5 rounded-full bg-accent-amber"></span> Configuración
-        </h2>
-        <div class="grid grid-cols-2 gap-x-4 gap-y-4">
-          <div class="flex flex-col gap-1">
-            <label class="text-[0.68rem] font-semibold text-text-muted uppercase tracking-wider">Bollos</label>
-            <div class="drum-roller" data-target="ballCount" data-min="1" data-max="100" data-step="1">
-              <div class="drum-track"></div>
-              <div class="drum-highlight"></div>
-            </div>
-            <input type="hidden" id="ballCount" value="3">
-          </div>
-          <div class="flex flex-col gap-1">
-            <label class="text-[0.68rem] font-semibold text-text-muted uppercase tracking-wider">Peso (g)</label>
-            <div class="drum-roller" data-target="ballWeight" data-min="100" data-max="400" data-step="10">
-              <div class="drum-track"></div>
-              <div class="drum-highlight"></div>
-            </div>
-            <input type="hidden" id="ballWeight" value="250">
-          </div>
-          <div class="flex flex-col gap-1 col-span-2">
-            <div class="flex justify-between items-center">
-                <label class="text-[0.68rem] font-semibold text-text-muted uppercase tracking-wider">Hidratación</label>
-                <span class="text-lg font-bold text-accent-gold" id="hydrationValue">58%</span>
-            </div>
-            <div class="pt-1 pb-0.5 w-full">
-              <input type="range" id="hydrationRange" min="50" max="75" step="1" value="58" class="w-full relative z-10 transition-all">
-            </div>
-          </div>
-          <div class="flex flex-col gap-1" id="hoursContainer">
-            <label for="fermentHours" class="text-[0.68rem] font-semibold text-text-muted uppercase tracking-wider">Frío (horas)</label>
-            <select id="fermentHours" class="bg-dark-surface border border-dark-border text-text-main py-2.5 px-3 rounded-xl text-base font-bold focus:ring-2 focus:ring-accent-amber/50 focus:border-accent-amber outline-none transition-all appearance-none cursor-pointer">
-              <option value="24">24 horas</option>
-              <option value="48" selected>48 horas</option>
-              <option value="60">60 horas</option>
-              <option value="72">72 horas</option>
-            </select>
-          </div>
-          <div class="flex flex-col gap-1">
-            <label class="text-[0.68rem] font-semibold text-text-muted uppercase tracking-wider">Temp. °C</label>
-            <div class="drum-roller" data-target="ambientTemp" data-min="-5" data-max="45" data-step="1">
-              <div class="drum-track"></div>
-              <div class="drum-highlight"></div>
-            </div>
-            <input type="hidden" id="ambientTemp" value="22">
-          </div>
-        </div>
-      </section>
-
-      <!-- Method -->
-      <section class="glass-panel rounded-2xl p-4 sm:p-5 lg:p-5">
-        <h2 class="text-xs uppercase tracking-[0.15em] text-accent-amber font-bold mb-3 flex items-center gap-2">
-            <span class="w-1.5 h-1.5 rounded-full bg-accent-amber"></span> Método
-        </h2>
-        <div class="flex p-0.5 sm:p-1 bg-dark-bg rounded-xl border border-dark-border mb-3 relative" id="methodToggleGroup">
-          <button class="flex-1 py-3 text-[0.65rem] sm:text-xs font-bold rounded-lg text-text-muted hover:text-text-main transition-colors z-10 method-btn" data-method="direct">Napolitana</button>
-          <button class="flex-1 py-3 text-[0.65rem] sm:text-xs font-bold rounded-lg text-text-muted hover:text-text-main transition-colors z-10 method-btn" data-method="poolish">N. Poolish</button>
-          <button class="flex-1 py-3 text-[0.65rem] sm:text-xs font-bold rounded-lg text-text-muted hover:text-text-main transition-colors z-10 method-btn" data-method="piedra">Arg Piedra</button>
-          <button class="flex-1 py-3 text-[0.65rem] sm:text-xs font-bold rounded-lg text-text-muted hover:text-text-main transition-colors z-10 method-btn" data-method="molde">Arg Molde</button>
-          <div class="absolute left-1 top-1 bottom-1 w-[calc(25%-2px)] bg-accent-amber rounded-lg shadow-md transition-all duration-300 ease-in-out" id="methodSlider"></div>
-        </div>
-        
-        <div id="poolishConfig" class="overflow-hidden transition-all duration-300 max-h-0 opacity-0 border-t border-dark-border/0 mt-0 pt-0">
-          <div class="flex gap-3">
-            <label class="flex-1 cursor-pointer">
-              <input type="radio" name="poolishType" value="rapid" class="peer hidden" checked>
-              <div class="text-center p-2.5 rounded-xl border-2 border-dark-border bg-dark-bg text-text-muted text-sm font-semibold transition-all peer-checked:border-accent-amber peer-checked:bg-accent-amber/10 peer-checked:text-accent-gold hover:border-dark-border/80">Rápido (~3h)</div>
-            </label>
-            <label class="flex-1 cursor-pointer">
-              <input type="radio" name="poolishType" value="cold" class="peer hidden">
-              <div class="text-center p-2.5 rounded-xl border-2 border-dark-border bg-dark-bg text-text-muted text-sm font-semibold transition-all peer-checked:border-accent-amber peer-checked:bg-accent-amber/10 peer-checked:text-accent-gold hover:border-dark-border/80">Frío (12-16h)</div>
-            </label>
-          </div>
-        </div>
-      </section>
-
-      <!-- Procedure (visible only on lg on left column, on mobile it appears below results) -->
-      <section id="instructionsSection" class="glass-panel rounded-2xl p-4 sm:p-5 lg:p-5 mb-6 lg:mb-0 invisible opacity-0 transition-opacity duration-500 order-last lg:order-none hidden lg:block">
-        <h2 class="text-xs uppercase tracking-[0.15em] text-accent-amber font-bold mb-4 flex items-center gap-2">
-            <span class="w-1.5 h-1.5 rounded-full bg-accent-amber"></span> Procedimiento
-        </h2>
-        <ol id="stepsList" class="space-y-3 list-none counter-reset-step"></ol>
-      </section>
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8" id="metricas">
+    <div class="glass-panel rounded-2xl p-4">
+      <p class="text-[0.65rem] text-text-muted uppercase tracking-wider mb-1">Costo Prom. x Pizza</p>
+      <p class="text-2xl font-bold text-accent-gold" id="m-costo-pizza">—</p>
     </div>
-
-    <!-- ══ RIGHT COLUMN: Results + Diagnostics (Sticky on desktop) ══ -->
-    <div class="lg:col-span-7 lg:sticky lg:top-4 lg:self-start space-y-4 lg:space-y-5">
-
-      <!-- Summary badges -->
-      <section id="resultsSection" class="mb-4 lg:mb-0 invisible opacity-0 transition-opacity duration-500">
-        <div class="flex flex-wrap gap-2 mb-4" id="summaryBar"></div>
-        <div id="resultsContent" class="space-y-4"></div>
-      </section>
-
-      <!-- Diagnostics -->
-      <section id="tempAdvisory" class="mb-4 lg:mb-0 invisible opacity-0 transition-opacity duration-500">
-        <h2 class="text-xs uppercase tracking-[0.15em] text-accent-amber font-bold mb-3 flex items-center gap-2">
-            <span class="w-1.5 h-1.5 rounded-full bg-accent-amber"></span> Diagnóstico Dinámico
-        </h2>
-        <div id="tempAdvice" class="space-y-2"></div>
-      </section>
+    <div class="glass-panel rounded-2xl p-4">
+      <p class="text-[0.65rem] text-text-muted uppercase tracking-wider mb-1">Costos Op. / Mes</p>
+      <p class="text-2xl font-bold text-purple-400" id="m-costos-op">—</p>
     </div>
-
+    <div class="glass-panel rounded-2xl p-4">
+      <p class="text-[0.65rem] text-text-muted uppercase tracking-wider mb-1">Recetas</p>
+      <p class="text-2xl font-bold text-emerald-400" id="m-recetas">—</p>
+    </div>
+    <div class="glass-panel rounded-2xl p-4">
+      <p class="text-[0.65rem] text-text-muted uppercase tracking-wider mb-1">Pizzas / Mes</p>
+      <p class="text-2xl font-bold text-orange-400" id="m-pizzas">—</p>
+    </div>
   </div>
 
-  <!-- ══ MOBILE-ONLY: Procedure after results (mirrors desktop left col) ══ -->
-  <section id="instructionsSectionMobile" class="glass-panel rounded-2xl p-4 sm:p-5 mt-4 mb-6 invisible opacity-0 transition-opacity duration-500 lg:hidden">
-    <h2 class="text-xs uppercase tracking-[0.15em] text-accent-amber font-bold mb-4 flex items-center gap-2">
-        <span class="w-1.5 h-1.5 rounded-full bg-accent-amber"></span> Procedimiento Paso a Paso
-    </h2>
-    <ol id="stepsListMobile" class="space-y-3 list-none counter-reset-step"></ol>
-  </section>
-
-  <button class="w-full lg:max-w-md lg:mx-auto py-4 bg-accent-amber hover:bg-accent-gold hover:scale-[1.01] active:scale-[0.98] text-dark-bg font-['Outfit'] font-bold text-lg rounded-xl shadow-lg shadow-accent-amber/20 transition-all no-print" onclick="window.print()">Imprimir Receta / Guardar PDF</button>
-
-  <footer class="text-center mt-8 text-xs text-text-muted font-medium">
-    Calculadora Pizzeria Profesional &bull; Astro &bull; Version Experta
-  </footer>
+  <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
+    <a href="/masa" class="glass-panel rounded-2xl p-5 hover:border-accent-amber/50 transition-all group">
+      <div class="text-2xl mb-2">🧮</div>
+      <h2 class="font-bold text-text-main group-hover:text-accent-amber transition-colors">Calculadora</h2>
+      <p class="text-xs text-text-muted mt-1">Masa napolitana híbrida</p>
+    </a>
+    <a href="/recetas" class="glass-panel rounded-2xl p-5 hover:border-emerald-500/50 transition-all group">
+      <div class="text-2xl mb-2">📋</div>
+      <h2 class="font-bold text-text-main group-hover:text-emerald-400 transition-colors">Recetas</h2>
+      <p class="text-xs text-text-muted mt-1">Costos de producción</p>
+    </a>
+    <a href="/costos" class="glass-panel rounded-2xl p-5 hover:border-purple-500/50 transition-all group">
+      <div class="text-2xl mb-2">💼</div>
+      <h2 class="font-bold text-text-main group-hover:text-purple-400 transition-colors">Costos Operativos</h2>
+      <p class="text-xs text-text-muted mt-1">Fijos y variables del negocio</p>
+    </a>
+    <a href="/precios" class="glass-panel rounded-2xl p-5 hover:border-orange-500/50 transition-all group">
+      <div class="text-2xl mb-2">🏷️</div>
+      <h2 class="font-bold text-text-main group-hover:text-orange-400 transition-colors">Lista de Precios</h2>
+      <p class="text-xs text-text-muted mt-1">Precios de venta calculados</p>
+    </a>
+    <a href="/marketing" class="glass-panel rounded-2xl p-5 hover:border-pink-500/50 transition-all group col-span-2 lg:col-span-1">
+      <div class="text-2xl mb-2">🎯</div>
+      <h2 class="font-bold text-text-main group-hover:text-pink-400 transition-colors">Marketing IA</h2>
+      <p class="text-xs text-text-muted mt-1">Combos, promos y contenido</p>
+    </a>
+  </div>
 </Layout>
 
 <script>
-  import { calculateYeast, calculatePoolishYeast, poolishRapidTime, temperingTime, waterTemp, formatMinutes, fmt, calculatePiedraYeast, calculateMoldeYeast, piedraFirstFermentTime, piedraSecondFermentTime, moldeFirstFermentTime, moldeSecondFermentTime } from '../utils/math';
+  import { insforge } from '../lib/insforge';
+  import { calcCostoOperativoPorPizza } from '../utils/pricing';
 
-  // State Management
-  let state = {
-    method: 'direct',
-    balls: 3,
-    weight: 250,
-    hydration: 58,
-    hours: 48,
-    temp: 22,
-    poolishType: 'rapid' as 'rapid'|'cold'
-  };
+  async function loadMetricas() {
+    const db = insforge.database;
+    const [recetas, costosFijos, costosVar, config] = await Promise.all([
+      db.from('recetas').select('id'),
+      db.from('costos_fijos').select('monto').eq('activo', true),
+      db.from('costos_variables').select('monto_referencia'),
+      db.from('config_negocio').select('pizzas_objetivo_mes').limit(1),
+    ]);
 
-  const UI = {
-    methodBtns: document.querySelectorAll('.method-btn'),
-    methodSlider: document.getElementById('methodSlider'),
-    poolishConfig: document.getElementById('poolishConfig'),
-    poolishRadios: document.querySelectorAll('input[name="poolishType"]'),
-    
-    ballCount: document.getElementById('ballCount') as HTMLInputElement,
-    ballWeight: document.getElementById('ballWeight') as HTMLInputElement,
-    hydrationRange: document.getElementById('hydrationRange') as HTMLInputElement,
-    hydrationValue: document.getElementById('hydrationValue'),
-    fermentHours: document.getElementById('fermentHours') as HTMLSelectElement,
-    ambientTemp: document.getElementById('ambientTemp') as HTMLInputElement,
-    
-    summaryBar: document.getElementById('summaryBar'),
-    resultsContent: document.getElementById('resultsContent'),
-    tempAdvice: document.getElementById('tempAdvice'),
-    stepsList: document.getElementById('stepsList'),
-    stepsListMobile: document.getElementById('stepsListMobile'),
+    const totalOp = [
+      ...(costosFijos.data ?? []).map((c: any) => c.monto),
+      ...(costosVar.data ?? []).map((c: any) => c.monto_referencia),
+    ].reduce((a: number, b: number) => a + b, 0);
 
-    sections: [
-        document.getElementById('resultsSection'),
-        document.getElementById('tempAdvisory'),
-        document.getElementById('instructionsSection'),
-        document.getElementById('instructionsSectionMobile')
-    ]
-  };
+    const pizzasMes = config.data?.[0]?.pizzas_objetivo_mes ?? 800;
+    const costoPorPizza = calcCostoOperativoPorPizza(totalOp, pizzasMes);
 
-  // Observers
-  function setupListeners() {
-    UI.methodBtns.forEach((btn, index) => {
-      btn.addEventListener('click', () => {
-        state.method = (btn as HTMLElement).dataset.method;
-        
-        UI.methodSlider.style.transform = `translateX(${index * 100}%)`;
-        UI.methodBtns.forEach(b => {
-            b.classList.remove('text-dark-bg', 'text-text-main');
-            b.classList.add('text-text-muted');
-        });
-        btn.classList.remove('text-text-muted');
-        btn.classList.add('text-dark-bg');
-        
-        if (state.method === 'poolish') {
-          UI.poolishConfig.classList.replace('max-h-0', 'max-h-24');
-          UI.poolishConfig.classList.replace('opacity-0', 'opacity-100');
-          UI.poolishConfig.classList.replace('border-t-dark-border/0', 'border-t-dark-border/50');
-          UI.poolishConfig.classList.add('mt-4', 'pt-4');
-        } else {
-          UI.poolishConfig.classList.replace('max-h-24', 'max-h-0');
-          UI.poolishConfig.classList.replace('opacity-100', 'opacity-0');
-          UI.poolishConfig.classList.replace('border-t-dark-border/50', 'border-t-dark-border/0');
-          UI.poolishConfig.classList.remove('mt-4', 'pt-4');
-        }
-        recalc();
-      });
-    });
-
-    UI.poolishRadios.forEach(radio => {
-        radio.addEventListener('change', (e) => {
-            state.poolishType = (e.target as HTMLInputElement).value as 'rapid'|'cold';
-            recalc();
-        });
-    });
-
-    UI.hydrationRange.addEventListener('input', (e) => {
-        state.hydration = parseInt((e.target as HTMLInputElement).value);
-        UI.hydrationValue.innerText = state.hydration + '%';
-        recalc();
-    });
-
-    // MAPEO EXPLÍCITO: cada input ID → su propiedad en state
-    const inputMap: Record<string, string> = {
-      'ballCount': 'balls',
-      'ballWeight': 'weight',
-      'fermentHours': 'hours',
-      'ambientTemp': 'temp'
-    };
-
-    Object.entries(inputMap).forEach(([inputId, stateKey]) => {
-        const el = UI[inputId] as HTMLInputElement | HTMLSelectElement;
-        el.addEventListener('input', () => {
-            (state as any)[stateKey] = parseInt(el.value) || 0;
-            recalc();
-        });
-        // Also listen for 'change' on select elements
-        el.addEventListener('change', () => {
-            (state as any)[stateKey] = parseInt(el.value) || 0;
-            recalc();
-        });
-    });
-
-    // Init state visual
-    UI.methodBtns[0].classList.add('text-dark-bg');
+    const fmt = (n: number) => '$' + Math.round(n).toLocaleString('es-AR');
+    document.getElementById('m-costo-pizza')!.textContent = fmt(costoPorPizza);
+    document.getElementById('m-costos-op')!.textContent = fmt(totalOp);
+    document.getElementById('m-recetas')!.textContent = String(recetas.data?.length ?? 0);
+    document.getElementById('m-pizzas')!.textContent = String(pizzasMes);
   }
 
-  // Engine core UI render
-  function recalc() {
-    const totalDough = state.balls * state.weight;
-    const saltPct = 0.025;
-    const oilPct = 0.03;
-    const flour = totalDough / (1 + state.hydration / 100 + saltPct + oilPct);
-    
-    const strongFlour = flour * 0.90;
-    const wholeWheat = flour * 0.10;
-    const water = flour * state.hydration / 100;
-    const salt = flour * saltPct;
-    const oil = flour * oilPct;
-
-    const temperMin = temperingTime(state.temp);
-    const wTemp = waterTemp(state.temp);
-
-    // Fade sections in smoothly
-    UI.sections.forEach(s => {
-        s.classList.remove('invisible', 'opacity-0');
-    });
-
-    const isArgentine = state.method === 'piedra' || state.method === 'molde';
-    if (isArgentine) {
-        document.getElementById('hoursContainer').style.opacity = '0.4';
-        document.getElementById('hoursContainer').style.pointerEvents = 'none';
-        document.getElementById('tempAdvisory').style.display = 'none'; // ocultar advertencias de frio
-    } else {
-        document.getElementById('hoursContainer').style.opacity = '1';
-        document.getElementById('hoursContainer').style.pointerEvents = 'auto';
-        document.getElementById('tempAdvisory').style.display = 'block';
-    }
-
-    renderSummary(temperMin);
-    
-    if (state.method === 'direct') {
-        renderDirect(flour, strongFlour, wholeWheat, water, salt, oil, temperMin, wTemp);
-        renderDirectSteps(temperMin, wTemp);
-    } else if (state.method === 'poolish') {
-        renderPoolish(flour, strongFlour, wholeWheat, water, salt, oil, temperMin, wTemp);
-    } else if (state.method === 'piedra') {
-        renderPiedra(flour, strongFlour, wholeWheat, water, salt, oil, wTemp);
-    } else if (state.method === 'molde') {
-        renderMolde(flour, strongFlour, wholeWheat, water, salt, oil, wTemp);
-    }
-    
-    if (!isArgentine) {
-        renderTempAdvisory(wTemp, temperMin);
-    }
-  }
-
-  // --- Render HTML Builders
-  function ingredientHTML(name, amount, pctClass="text-text-muted", pctText="") {
-      return `
-      <div class="flex justify-between items-end py-2 border-b border-dark-border/40 group hover:border-accent-amber/50 transition-colors">
-          <span class="text-[0.95rem] group-hover:text-accent-gold transition-colors">${name}</span>
-          <div class="flex items-baseline gap-3">
-              <span class="text-xs ${pctClass}">${pctText}</span>
-              <span class="text-lg font-bold text-text-main group-hover:text-white transition-colors min-w-[65px] text-right">${fmt(amount)}<span class="text-xs text-text-muted ml-0.5">g</span></span>
-          </div>
-      </div>`;
-  }
-  
-  function renderSummary(temperMin) {
-    const isArgentine = state.method === 'piedra' || state.method === 'molde';
-    const frioHtml = isArgentine ? 
-      `<span class="px-3.5 py-1.5 rounded-full bg-dark-surface border border-dark-border text-xs font-medium text-text-muted border-l-2 border-l-accent-amber"><strong class="text-accent-gold">Directa</strong></span>` 
-      : `<span class="px-3.5 py-1.5 rounded-full bg-dark-surface border border-dark-border text-xs font-medium text-text-muted border-l-2 border-l-accent-amber">Frío <strong class="text-accent-gold">${state.hours}h</strong></span>`;
-    const atemperHtml = isArgentine ? '' : `<span class="px-3.5 py-1.5 rounded-full bg-dark-surface border border-dark-border text-xs font-medium text-text-muted border-l-2 border-l-accent-amber">Atempera en <strong class="text-accent-gold">${formatMinutes(temperMin)}</strong></span>`;
-
-    UI.summaryBar.innerHTML = `
-      <span class="px-3.5 py-1.5 rounded-full bg-dark-surface border border-dark-border text-xs font-medium text-text-muted border-l-2 border-l-accent-amber"><strong class="text-accent-gold">${state.balls}</strong> x <strong class="text-accent-gold">${state.weight}g</strong></span>
-      ${frioHtml}
-      <span class="px-3.5 py-1.5 rounded-full bg-dark-surface border border-dark-border text-xs font-medium text-text-muted border-l-2 border-l-accent-amber">Ambiente <strong class="text-accent-gold">${state.temp}°C</strong></span>
-      ${atemperHtml}
-    `;
-  }
-
-  function renderDirect(flour, strongFlour, wholeWheat, water, salt, oil, temperMin, wTemp) {
-      const yeast = calculateYeast(flour, state.hours, state.temp);
-      const total = strongFlour + wholeWheat + water + salt + oil + yeast;
-      
-      UI.resultsContent.innerHTML = `
-      <div class="bg-dark-surface/50 border border-dark-border rounded-xl p-5 shadow-inner">
-          <h3 class="text-xs uppercase tracking-widest text-text-muted mb-4 pb-2 border-b border-dark-border">Ingredientes Directo</h3>
-          ${ingredientHTML('Harina Fuerza (W300+)', strongFlour, '', '90%')}
-          ${ingredientHTML('Harina Integral', wholeWheat, '', '10%')}
-          ${ingredientHTML(`Agua (~${wTemp}°C)`, water, '', state.hydration+'%')}
-          ${ingredientHTML('Sal', salt, '', '2.5%')}
-          ${ingredientHTML('Aceite de oliva', oil, '', '3%')}
-          ${ingredientHTML('Levadura fresca', yeast, 'text-accent-amber font-bold', (yeast/flour*100).toFixed(2)+'%')}
-          
-          <div class="flex justify-between items-end mt-4 pt-3 border-t-2 border-accent-amber/50">
-              <span class="text-sm font-bold text-accent-gold uppercase tracking-widest">Peso Total</span>
-              <span class="text-xl font-bold text-white">${fmt(total)}<span class="text-sm text-text-muted ml-1">g</span></span>
-          </div>
-      </div>
-      <div class="glass-accent rounded-lg p-4 mt-4 text-sm text-text-muted leading-relaxed">
-          <strong class="text-accent-gold block mb-1">Cálculo Enzimático de Levadura:</strong>
-          Se requieren ${fmt(yeast)}g de levadura fresca asumiendo ${state.hours}h de heladera. La ecuación compensa exactamente para la biología a ${state.temp}°C ambiente. (Levadura Seca equivalente: ${fmt(yeast/3.19)}g).
-      </div>`;
-  }
-
-  function renderPoolish(flour, strongFlour, wholeWheat, water, salt, oil, temperMin, wTemp) {
-      const poolishFlour = flour * 0.30;
-      const poolishWater = poolishFlour;
-      const poolishYeast = calculatePoolishYeast(poolishFlour, state.temp, state.poolishType);
-      
-      const remainStrongFlour = strongFlour - poolishFlour;
-      const remainWater = water - poolishWater;
-      const poolishTotal = poolishFlour + poolishWater + poolishYeast;
-      const finalTotal = remainStrongFlour + wholeWheat + Math.max(remainWater,0) + salt + oil + poolishTotal;
-
-      const pTitle = state.poolishType === 'rapid' ? `Rápido (~${formatMinutes(poolishRapidTime(state.temp))})` : 'Frío (12 a 16h)';
-
-      UI.resultsContent.innerHTML = `
-      <div class="bg-dark-surface/50 border border-dark-border rounded-xl p-5 shadow-inner mb-4">
-          <h3 class="text-xs uppercase tracking-widest text-accent-gold mb-4 pb-2 border-b border-dark-border">A. Poolish Prefermento - ${pTitle}</h3>
-          ${ingredientHTML('Harina Fuerza', poolishFlour, '', '30% base')}
-          ${ingredientHTML('Agua (Ambiente)', poolishWater, '', '100%')}
-          ${ingredientHTML('Levadura fresca', poolishYeast, 'text-accent-amber font-bold')}
-          
-           <div class="flex justify-between items-end mt-4 pt-3 border-t border-dark-border">
-              <span class="text-xs text-text-muted uppercase tracking-widest">SUBTOTAL POOLISH</span>
-              <span class="text-md font-bold text-white">${fmt(poolishTotal)}g</span>
-          </div>
-      </div>
-
-      <div class="bg-dark-surface/50 border border-dark-border rounded-xl p-5 shadow-inner">
-          <h3 class="text-xs uppercase tracking-widest text-text-muted mb-4 pb-2 border-b border-dark-border">B. Masa Final</h3>
-          ${ingredientHTML('Todo el Poolish (Paso A)', poolishTotal)}
-          ${ingredientHTML('Harina Fuerza Restante', remainStrongFlour)}
-          ${ingredientHTML('Harina Integral', wholeWheat, '', '10%')}
-          ${ingredientHTML(`Agua (~${wTemp}°C)`, Math.max(remainWater,0))}
-          ${ingredientHTML('Sal', salt, '', '2.5%')}
-          ${ingredientHTML('Aceite de oliva', oil, '', '3%')}
-          
-          <div class="flex justify-between items-end mt-4 pt-3 border-t-2 border-accent-amber/50">
-              <span class="text-sm font-bold text-accent-gold uppercase tracking-widest">Peso Total Final</span>
-              <span class="text-xl font-bold text-white">${fmt(finalTotal)}<span class="text-sm text-text-muted ml-1">g</span></span>
-          </div>
-      </div>
-      ${remainWater < 0 ? '<div class="glass-accent border-status-danger/50 mt-4 p-4 rounded-lg"><span class="text-status-danger font-bold">¡ALERTA!</span> Hidratación demasiado baja para Poolish al 30%.</div>' : ''}
-      `;
-
-      renderPoolishSteps(temperMin, wTemp);
-  }
-
-  function renderPiedra(flour, strongFlour, wholeWheat, water, salt, oil, wTemp) {
-      const yeast = calculatePiedraYeast(flour, state.temp);
-      const total = strongFlour + wholeWheat + water + salt + oil + yeast;
-      
-      UI.resultsContent.innerHTML = `
-      <div class="bg-dark-surface/50 border border-dark-border rounded-xl p-5 shadow-inner mb-4">
-          <h3 class="text-xs uppercase tracking-widest text-text-muted mb-4 pb-2 border-b border-dark-border">Ingredientes A la Piedra</h3>
-          ${ingredientHTML('Harina Múltiple (000/0000)', strongFlour, '', '90%')}
-          ${ingredientHTML('Harina Integral', wholeWheat, '', '10%')}
-          ${ingredientHTML(`Agua (~${wTemp}°C)`, water, '', state.hydration+'%')}
-          ${ingredientHTML('Sal media fina / Gorda', salt, '', '2.5%')}
-          ${ingredientHTML('Aceite de oliva/Girasol', oil, '', '3%')}
-          ${ingredientHTML('Levadura fresca', yeast, 'text-accent-amber font-bold', (yeast/flour*100).toFixed(2)+'%')}
-          
-          <div class="flex justify-between items-end mt-4 pt-3 border-t-2 border-accent-amber/50">
-              <span class="text-sm font-bold text-accent-gold uppercase tracking-widest">Peso Total</span>
-              <span class="text-xl font-bold text-white">${fmt(total)}<span class="text-sm text-text-muted ml-1">g</span></span>
-          </div>
-      </div>
-      <div class="glass-accent rounded-lg p-4 mt-4 text-sm text-text-muted leading-relaxed">
-          <strong class="text-accent-gold block mb-1">Pizza a la Piedra (Clásica del día):</strong>
-          Preparada para consumir en corto tiempo a temperatura ambiente. Masa fina y crocante apoyada directo a la piedra del horno. Reducida carga de levadura frente a la de molde.
-      </div>`;
-
-      const tBlock = formatMinutes(piedraFirstFermentTime(state.temp));
-      const tBollos = formatMinutes(piedraSecondFermentTime(state.temp));
-      const st = [
-          `Disolver la levadura en agua a ~${wTemp}°C. Volcar sal y aceite antes de echar la harina.`,
-          `Incorporar harinas y amasar sostenidamente hasta formar un bollo liso, parejo y tenso.`,
-          `Poner en un bowl o taper cerrado en lugar cálido. Reposo en bloque por <strong>${tBlock}</strong>.`,
-          `Dividir la masa y bollar (${state.balls}x de ${state.weight}g).`,
-          `Dejar reposar los bollos en cajas o mesa enharinada y bien tapados por <strong>${tBollos}</strong>.`,
-          `Estirar con mano (o apenas de palo), armar rápido y al horno a temperatura brutal sobre la piedra de cocción.`
-      ];
-      
-      const stepsHTML = st.map((s,i) => `
-        <li class="relative pl-10 text-[0.88rem] leading-relaxed py-1.5 border-b border-dark-border/40 last:border-0">
-          <span class="absolute left-0 top-1.5 flex items-center justify-center w-6 h-6 rounded-full bg-accent-amber/20 text-accent-gold font-bold text-xs ring-1 ring-accent-amber/50">${i+1}</span>
-          ${s}
-        </li>`).join('');
-      UI.stepsList.innerHTML = stepsHTML;
-      UI.stepsListMobile.innerHTML = stepsHTML;
-  }
-
-  function renderMolde(flour, strongFlour, wholeWheat, water, salt, oil, wTemp) {
-      const yeast = calculateMoldeYeast(flour, state.temp);
-      const total = strongFlour + wholeWheat + water + salt + oil + yeast;
-      
-      UI.resultsContent.innerHTML = `
-      <div class="bg-dark-surface/50 border border-dark-border rounded-xl p-5 shadow-inner mb-4">
-          <h3 class="text-xs uppercase tracking-widest text-text-muted mb-4 pb-2 border-b border-dark-border">Ingredientes Al Molde</h3>
-          ${ingredientHTML('Harina Múltiple (000/0000)', strongFlour, '', '90%')}
-          ${ingredientHTML('Harina Integral', wholeWheat, '', '10%')}
-          ${ingredientHTML(`Agua (~${wTemp}°C)`, water, '', state.hydration+'%')}
-          ${ingredientHTML('Sal media fina / Gorda', salt, '', '2.5%')}
-          ${ingredientHTML('Aceite clásico', oil, '', '3%')}
-          ${ingredientHTML('Levadura fresca', yeast, 'text-accent-amber font-bold', (yeast/flour*100).toFixed(2)+'%')}
-          
-          <div class="flex justify-between items-end mt-4 pt-3 border-t-2 border-accent-amber/50">
-              <span class="text-sm font-bold text-accent-gold uppercase tracking-widest">Peso Total</span>
-              <span class="text-xl font-bold text-white">${fmt(total)}<span class="text-sm text-text-muted ml-1">g</span></span>
-          </div>
-      </div>
-      <div class="glass-accent rounded-lg p-4 mt-4 text-sm text-text-muted leading-relaxed">
-          <strong class="text-accent-gold block mb-1">Pizza al Molde (Alta y Esponjosa):</strong>
-          Fermentación doble alta. Alta cantidad de levadura biológica fresca para crecer veloz y atrapar mucho gas carbónico en la placa durante el leudo final.
-      </div>`;
-
-      const tBlock = formatMinutes(moldeFirstFermentTime(state.temp));
-      const tBollos = formatMinutes(moldeSecondFermentTime(state.temp));
-      const st = [
-          `Disolver mucha levadura fresca en agua tibia o templada a ~${wTemp}°C. Volcar también todo el aceite.`,
-          `Agregar casi toda la harina y sal. Amasar firmemente dando fuertes tirones unos 10 minutos.`,
-          `Bollar grande, pintar con aceite, cubrir con nylon grueso y dar reposo fuerte de unos <strong>${tBlock}</strong>.`,
-          `Desgasificar de un golpe, pesar y dividir (bollos de ${state.weight}g).`,
-          `Bollar ligeramente con mucha tensión superficial y acomodarlos en el centro de moldes pizzeros profusamente aceitados.`,
-          `Tapar las pizzeras con film/bolsas. Dejar desbordar inflando adentro mínimo <strong>${tBollos}</strong> antes de esparcir e ingresar al horno.`
-      ];
-      const stepsHTML = st.map((s,i) => `
-        <li class="relative pl-10 text-[0.88rem] leading-relaxed py-1.5 border-b border-dark-border/40 last:border-0">
-          <span class="absolute left-0 top-1.5 flex items-center justify-center w-6 h-6 rounded-full bg-accent-amber/20 text-accent-gold font-bold text-xs ring-1 ring-accent-amber/50">${i+1}</span>
-          ${s}
-        </li>`).join('');
-      UI.stepsList.innerHTML = stepsHTML;
-      UI.stepsListMobile.innerHTML = stepsHTML;
-  }
-
-  function alertCard(title, text, type) {
-      let klass = "border-l-accent-amber bg-accent-amber/5";
-      let titleClass = "text-accent-gold";
-      if (type === 'danger') {
-          klass = "border-l-status-danger bg-status-danger/5";
-          titleClass = "text-status-danger";
-      } else if (type === 'info') {
-          klass = "border-l-blue-400 bg-blue-400/5";
-          titleClass = "text-blue-400";
-      }
-
-      return `<div class="border-l-[3px] rounded-r-lg p-3.5 text-[0.85rem] leading-relaxed text-text-muted ${klass}">
-        <span class="font-bold block mb-0.5 ${titleClass}">${title}</span>
-        ${text}
-      </div>`;
-  }
-
-  function renderTempAdvisory(wTemp, temperMin) {
-    let cards = [];
-
-    // 1. Agua
-    let waterAdvice = '';
-    if (wTemp <= 4) waterAdvice = 'Necesitás agua helada: mezclá agua de heladera con hielo filtrado.';
-    else if (wTemp <= 10) waterAdvice = 'Usá agua directa de la heladera.';
-    else if (wTemp <= 18) waterAdvice = 'Agua fresca del grifo, no necesita estar helada.';
-    else waterAdvice = 'Agua a temperatura ambiente.';
-    
-    cards.push(alertCard(
-      `Regla del 70 → Agua a ${wTemp}°C`,
-      `Con ${state.temp}°C de ambiente, el agua debe estar a ~${wTemp}°C. ${waterAdvice}`,
-      wTemp <= 4 ? 'info' : 'normal'
-    ));
-    
-    // 2. Atemperado
-    let temperAdvice = '';
-    if (state.temp <= 18) {
-      temperAdvice = `Con ${state.temp}°C en tu cocina, la masa NUNCA llegará a 18°C sola. Ponela cerca del horno encendido o en el lugar más cálido. Vigilá visualmente que esté blanda y haya crecido antes de estirar.`;
-    } else if (state.temp >= 35) {
-      temperAdvice = `A ${state.temp}°C se atempera rapidísimo. ¡Cuidado! No la dejes fuera más de lo indicado o sobrefermentará.`;
-    } else {
-      temperAdvice = `Dejalos en la mesada tapados hasta que estén blandos al tacto y hayan crecido levemente.`;
-    }
-    cards.push(alertCard(
-      `Atemperado: ${formatMinutes(temperMin)} antes de hornear`,
-      `Sacá los bollos de la heladera exactamente ${formatMinutes(temperMin)} antes. ${temperAdvice}`,
-      state.temp <= 18 ? 'danger' : 'normal'
-    ));
-    
-    // 3. Diagnóstico por zona térmica
-    if (state.temp <= 0) {
-      // CONGELAMIENTO
-      const yPct = (calculateYeast(500, state.hours, state.temp) / 500 * 100).toFixed(2);
-      cards.push(alertCard(
-        `⚠ ALERTA: Temperatura bajo cero (${state.temp}°C)`,
-        `La levadura entra en DORMANCIA total bajo 0°C. No hay fermentación posible en tu cocina. ` +
-        `La levadura se calculó al máximo práctico (${yPct}%) para que arranque apenas suba la temperatura. ` +
-        `Es IMPRESCINDIBLE dejar la masa al menos 2 horas en el lugar más cálido que encuentres antes de meter al frío. ` +
-        `Si tu cocina está bajo cero, considerá hacer la masa en otro momento.`,
-        'danger'
-      ));
-    } else if (state.temp <= 10) {
-      const yPct = (calculateYeast(500, state.hours, state.temp) / 500 * 100).toFixed(2);
-      cards.push(alertCard(
-        `Frío intenso (${state.temp}°C)`,
-        `La levadura trabaja a velocidad mínima. Se aumentó a ${yPct}% para compensar. ` +
-        `Dejá la masa reposar 1.5 a 2 horas a esta temperatura antes de meterla al frío. ` +
-        `Buscá el lugar más cálido de la cocina. Sin este empujón inicial, la fermentación en frío será insuficiente.`,
-        'danger'
-      ));
-    } else if (state.temp <= 16) {
-      cards.push(alertCard(
-        `Fresco (${state.temp}°C)`,
-        `La fermentación inicial será lenta. Dejá la masa descansar 1 hora tapada antes del frío. ` +
-        `La cantidad de levadura ya se ajustó al alza para compensar esta temperatura.`,
-        'normal'
-      ));
-    } else if (state.temp <= 25) {
-      cards.push(alertCard(
-        `Temperatura ideal (${state.temp}°C)`,
-        `Condiciones perfectas para trabajar. Dejá reposar 30-45 minutos después de bollar, ` +
-        `luego a la heladera. La levadura está calibrada exactamente para este ambiente.`,
-        'normal'
-      ));
-    } else if (state.temp <= 32) {
-      const yPct = (calculateYeast(500, state.hours, state.temp) / 500 * 100).toFixed(2);
-      cards.push(alertCard(
-        `Calor fuerte (${state.temp}°C)`,
-        `La levadura se activa agresivamente. Se redujo a ${yPct}% para evitar sobrefermentación. ` +
-        `Después de los pliegues, metela a la heladera en MÁXIMO 20 minutos. ` +
-        `No dejes reposar afuera más que eso.`,
-        'danger'
-      ));
-    } else {
-      // 33-40+°C
-      const yPct = (calculateYeast(500, state.hours, state.temp) / 500 * 100).toFixed(2);
-      cards.push(alertCard(
-        `⚠ CALOR EXTREMO (${state.temp}°C)`,
-        `La levadura trabaja a velocidad máxima y a partir de 40°C empieza a morir. ` +
-        `Se redujo a ${yPct}% (mínimo biológico práctico). ` +
-        `Metela a la heladera INMEDIATAMENTE después del bolleo, sin ningún reposo afuera. ` +
-        `Usá agua con hielo para bajar la temperatura de la masa lo antes posible.`,
-        'danger'
-      ));
-    }
-
-    // 4. Alerta de combo peligroso: calor + fermentación larga
-    if (state.temp >= 28 && state.hours >= 72) {
-      cards.push(alertCard(
-        `Combinación riesgosa: ${state.temp}°C + ${state.hours}h`,
-        `La masa entra MUY activa a la heladera y puede sobrefermentar. ` +
-        `Verificá que tu heladera esté a 4°C máximo. Si ves que los bollos suben mucho ` +
-        `en las primeras 12 horas, sacalos antes de las ${state.hours}h.`,
-        'danger'
-      ));
-    }
-    
-    // 5. Alerta de combo: bajo cero + fermentación corta
-    if (state.temp <= 5 && state.hours <= 24) {
-      cards.push(alertCard(
-        `Riesgo: Frío + fermentación corta`,
-        `Con solo ${state.hours}h en frío y ${state.temp}°C de ambiente, la levadura podría no arrancar a tiempo. ` +
-        `Considerá subir a 48h o dejá la masa 2 horas afuera antes del frío para asegurar un mínimo de actividad.`,
-        'danger'
-      ));
-    }
-
-    // 6. Poolish rápido con temp actual
-    if (state.method === 'poolish' && state.poolishType === 'rapid') {
-      const rapidMin = poolishRapidTime(state.temp);
-      let poolishAdvice = '';
-      if (state.temp >= 30) poolishAdvice = 'Con este calor fermenta MUY rápido. Vigilalo cada 20 minutos.';
-      else if (state.temp <= 10) poolishAdvice = 'Con este frío tardará mucho. Ponelo cerca del horno o arriba de la heladera.';
-      else poolishAdvice = 'Revisalo cuando veas burbujas y el centro empiece a hundirse.';
-      
-      cards.push(alertCard(
-        `Tu poolish rápido hoy: ~${formatMinutes(rapidMin)}`,
-        `A ${state.temp}°C estará listo en aproximadamente ${formatMinutes(rapidMin)}. ${poolishAdvice}`,
-        state.temp >= 30 || state.temp <= 10 ? 'danger' : 'normal'
-      ));
-    }
-
-    UI.tempAdvice.innerHTML = cards.join('');
-  }
-
-  function renderDirectSteps(temperMin, wTemp) {
-      const waterDesc = wTemp <= 10 ? `<strong class="text-accent-gold">AGUA HELADA (${wTemp}°C)</strong>` : `agua a ~${wTemp}°C`;
-      const preRest = state.temp >= 28 ? '<strong class="text-status-danger">Heladera instantánea</strong> sin descanso.' : state.temp <= 14 ? 'Descansa tapado 1 hora afuera.' : 'Descansa 30 minutos afuera.';
-      
-      const st = [
-          `Disolver la levadura en toda el ${waterDesc}. Volcar sal y aceite de oliva al agua.`,
-          `Incorporar harinas (mezclar sin amasar duro).`,
-          `Reposo inicial Tapado de <strong>45 min (fermentólisis)</strong>.`,
-          `2 rondas de "Coil Folds", 20 mins de separación geométrica a la masa.`,
-          `Bollar inmediatamente. ${preRest} Luego al fondo de la <strong>heladera (4°C) x ${state.hours}h</strong>.`,
-          `Atemperado rígido: sacar a mesada caliente <strong>${formatMinutes(temperMin)} clavados (calculado por grado)</strong> antes del horno.`
-      ];
-      
-      const stepsHTML = st.map((s,i) => `
-        <li class="relative pl-10 text-[0.88rem] leading-relaxed py-1.5 border-b border-dark-border/40 last:border-0">
-          <span class="absolute left-0 top-1.5 flex items-center justify-center w-6 h-6 rounded-full bg-accent-amber/20 text-accent-gold font-bold text-xs ring-1 ring-accent-amber/50">${i+1}</span>
-          ${s}
-        </li>`).join('');
-      UI.stepsList.innerHTML = stepsHTML;
-      UI.stepsListMobile.innerHTML = stepsHTML;
-  }
-
-  function renderPoolishSteps(temperMin, wTemp) {
-      const ptime = state.poolishType === 'rapid' ? `<strong>~${formatMinutes(poolishRapidTime(state.temp))} afuera</strong>` : "1 hora afuera + 12-16 horas en heladera";
-      const wDesc = wTemp <= 10 ? `helada (${wTemp}°C)` : `a ~${wTemp}°C`;
-      
-      const st = [
-          `Revolver el contenido del Poolish. Tapar estricto. Reposo: ${ptime}.`,
-          `Verter agua ${wDesc} encima del Poolish explotado en burbujas, romperlo, agregar sal y aceite.`,
-          `Añadir harinas finales sin amasar. Fermentólisis 30 minutos.`,
-          `2 rondas de Coil Fold separadas 20 minutos cada una.`,
-          `Bollar, llevar a <strong>Heladera ${state.hours}h</strong>.`,
-          `Atemperado en mesada calculado matemáticamente: <strong>${formatMinutes(temperMin)} exactos al ${state.temp}°C de hoy</strong>.`
-      ];
-      
-      const stepsHTML = st.map((s,i) => `
-        <li class="relative pl-10 text-[0.88rem] leading-relaxed py-1.5 border-b border-dark-border/40 last:border-0">
-          <span class="absolute left-0 top-1.5 flex items-center justify-center w-6 h-6 rounded-full bg-accent-amber/20 text-accent-gold font-bold text-xs ring-1 ring-accent-amber/50">${i+1}</span>
-          ${s}
-        </li>`).join('');
-      UI.stepsList.innerHTML = stepsHTML;
-      UI.stepsListMobile.innerHTML = stepsHTML;
-  }
-
-  // Drum Rollers
-  function initDrumRollers() {
-    const ITEM_H = 36;
-
-    document.querySelectorAll<HTMLElement>('.drum-roller').forEach(roller => {
-      const targetId = roller.dataset.target!;
-      const min = parseFloat(roller.dataset.min!);
-      const max = parseFloat(roller.dataset.max!);
-      const step = parseFloat(roller.dataset.step!);
-      const hiddenInput = document.getElementById(targetId) as HTMLInputElement;
-      const track = roller.querySelector('.drum-track') as HTMLElement;
-
-      // Build items
-      const items: number[] = [];
-      for (let v = min; v <= max + 0.001; v += step) {
-        items.push(Math.round(v * 1000) / 1000);
-      }
-
-      // Populate DOM
-      items.forEach(v => {
-        const div = document.createElement('div');
-        div.className = 'drum-item';
-        div.textContent = String(v);
-        track.appendChild(div);
-      });
-
-      const allItems = track.querySelectorAll<HTMLElement>('.drum-item');
-
-      function getIndex(v: number) {
-        return Math.max(0, items.findIndex(x => Math.abs(x - v) < 0.001));
-      }
-
-      function scrollToIndex(idx: number, smooth = false) {
-        track.scrollTo({ top: idx * ITEM_H, behavior: smooth ? 'smooth' : 'instant' });
-      }
-
-      function highlightIndex(idx: number) {
-        allItems.forEach((el, i) => el.classList.toggle('drum-item-active', i === idx));
-      }
-
-      function commitScroll() {
-        const idx = Math.max(0, Math.min(items.length - 1, Math.round(track.scrollTop / ITEM_H)));
-        scrollToIndex(idx, true);
-        highlightIndex(idx);
-        const v = items[idx];
-        if (String(v) !== hiddenInput.value) {
-          hiddenInput.value = String(v);
-          hiddenInput.dispatchEvent(new Event('input', { bubbles: true }));
-        }
-      }
-
-      // Init scroll position
-      const initIdx = getIndex(parseFloat(hiddenInput.value));
-      scrollToIndex(initIdx);
-      highlightIndex(initIdx);
-
-      // Scroll end: native + timeout fallback
-      let scrollTimer: ReturnType<typeof setTimeout>;
-      track.addEventListener('scroll', () => {
-        clearTimeout(scrollTimer);
-        scrollTimer = setTimeout(commitScroll, 120);
-      });
-      track.addEventListener('scrollend', () => {
-        clearTimeout(scrollTimer);
-        commitScroll();
-      });
-
-      // Mouse wheel on roller container (desktop)
-      roller.addEventListener('wheel', (e: WheelEvent) => {
-        e.preventDefault();
-        const idx = Math.max(0, Math.min(items.length - 1, Math.round(track.scrollTop / ITEM_H)));
-        const next = idx + (e.deltaY > 0 ? 1 : -1);
-        scrollToIndex(Math.max(0, Math.min(items.length - 1, next)), true);
-      }, { passive: false });
-    });
-  }
-
-  // Startup
-  document.addEventListener('DOMContentLoaded', () => {
-    initDrumRollers();
-    setupListeners();
-    recalc();
-  });
+  loadMetricas();
 </script>
-
-<style>
-    /* Styling especial para contador de pasos (aunque usamos HTML inyectado, guardado por si acaso) */
-</style>

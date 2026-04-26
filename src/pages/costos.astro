@@ -1,0 +1,231 @@
+---
+export const prerender = true;
+import Layout from '../layouts/Layout.astro';
+---
+<Layout title="Costos Operativos">
+  <header class="py-6 mb-4 border-b border-dark-border/50">
+    <h1 class="font-['Outfit'] text-2xl font-bold text-purple-400">💼 Costos Operativos</h1>
+    <p class="text-xs text-text-muted mt-1">Editá los costos del negocio — afectan directamente los precios de venta</p>
+  </header>
+
+  <div class="grid lg:grid-cols-2 gap-6 mb-6">
+    <!-- Costos Fijos -->
+    <div class="glass-panel rounded-2xl overflow-hidden">
+      <div class="flex items-center justify-between p-4 border-b border-dark-border/50">
+        <h2 class="text-xs uppercase tracking-wider text-purple-400 font-bold">Costos Fijos / Mes</h2>
+        <button id="btn-add-fijo" class="bg-purple-600/20 text-purple-400 text-xs px-3 py-1.5 rounded-lg hover:bg-purple-600/40 transition-all">+ Agregar</button>
+      </div>
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-text-muted text-[0.65rem] uppercase tracking-wider border-b border-dark-border/30">
+            <th class="text-left p-3">Concepto</th>
+            <th class="text-right p-3">Monto ($)</th>
+            <th class="p-3">Activo</th>
+            <th class="p-3"></th>
+          </tr>
+        </thead>
+        <tbody id="tbody-fijos"></tbody>
+      </table>
+      <div class="flex justify-between p-4 border-t border-dark-border/50 bg-dark-surface/50">
+        <span class="text-xs text-text-muted uppercase tracking-wider">Total fijos</span>
+        <span class="font-bold text-purple-400" id="total-fijos" data-raw="0">$0</span>
+      </div>
+    </div>
+
+    <!-- Costos Variables -->
+    <div class="glass-panel rounded-2xl overflow-hidden">
+      <div class="flex items-center justify-between p-4 border-b border-dark-border/50">
+        <h2 class="text-xs uppercase tracking-wider text-purple-400 font-bold">Costos Variables / Mes</h2>
+        <button id="btn-add-var" class="bg-purple-600/20 text-purple-400 text-xs px-3 py-1.5 rounded-lg hover:bg-purple-600/40 transition-all">+ Agregar</button>
+      </div>
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-text-muted text-[0.65rem] uppercase tracking-wider border-b border-dark-border/30">
+            <th class="text-left p-3">Concepto</th>
+            <th class="text-right p-3">Monto Ref. ($)</th>
+            <th class="p-3"></th>
+          </tr>
+        </thead>
+        <tbody id="tbody-variables"></tbody>
+      </table>
+      <div class="flex justify-between p-4 border-t border-dark-border/50 bg-dark-surface/50">
+        <span class="text-xs text-text-muted uppercase tracking-wider">Total variables</span>
+        <span class="font-bold text-purple-400" id="total-variables" data-raw="0">$0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Resumen + pizzas objetivo -->
+  <div class="glass-panel rounded-2xl p-5">
+    <h2 class="text-xs uppercase tracking-wider text-accent-amber font-bold mb-4">Resumen Mensual</h2>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div>
+        <p class="text-[0.65rem] text-text-muted uppercase tracking-wider">Total Fijos</p>
+        <p class="text-xl font-bold text-purple-400" id="sum-fijos">$0</p>
+      </div>
+      <div>
+        <p class="text-[0.65rem] text-text-muted uppercase tracking-wider">Total Variables</p>
+        <p class="text-xl font-bold text-purple-400" id="sum-variables">$0</p>
+      </div>
+      <div>
+        <p class="text-[0.65rem] text-text-muted uppercase tracking-wider">Total Operativo Mes</p>
+        <p class="text-xl font-bold text-white" id="sum-total">$0</p>
+      </div>
+      <div>
+        <p class="text-[0.65rem] text-text-muted uppercase tracking-wider">Costo Op. por Pizza</p>
+        <p class="text-xl font-bold text-accent-gold" id="costo-por-pizza">$0</p>
+      </div>
+    </div>
+    <div class="mt-4 flex items-center gap-3 flex-wrap">
+      <label class="text-xs text-text-muted uppercase tracking-wider">Pizzas objetivo / mes:</label>
+      <input type="number" id="inp-pizzas-mes" value="800" min="1"
+        class="w-24 bg-dark-surface border border-dark-border rounded-xl px-3 py-1.5 text-text-main text-sm focus:ring-2 focus:ring-accent-amber/50 outline-none">
+      <button id="btn-guardar-pizzas" class="bg-accent-amber text-dark-bg text-xs font-bold px-3 py-1.5 rounded-xl hover:bg-accent-gold transition-all">Guardar</button>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { insforge } from '../lib/insforge';
+  import { calcCostoOperativoPorPizza } from '../utils/pricing';
+
+  const db = insforge.database;
+  const fmt = (n: number) => '$' + Math.round(n).toLocaleString('es-AR');
+  let pizzasMes = 800;
+
+  function recalcular() {
+    const tf = parseFloat((document.getElementById('total-fijos') as HTMLElement).dataset.raw ?? '0');
+    const tv = parseFloat((document.getElementById('total-variables') as HTMLElement).dataset.raw ?? '0');
+    const total = tf + tv;
+    document.getElementById('sum-fijos')!.textContent = fmt(tf);
+    document.getElementById('sum-variables')!.textContent = fmt(tv);
+    document.getElementById('sum-total')!.textContent = fmt(total);
+    document.getElementById('costo-por-pizza')!.textContent = fmt(calcCostoOperativoPorPizza(total, pizzasMes));
+  }
+
+  async function renderFijos() {
+    const { data } = await db.from('costos_fijos').select('*').order('nombre', { ascending: true });
+    const items = data ?? [];
+    const total = items.filter((i: any) => i.activo).reduce((a: number, b: any) => a + b.monto, 0);
+    const el = document.getElementById('total-fijos') as HTMLElement;
+    el.textContent = fmt(total);
+    el.dataset.raw = String(total);
+
+    document.getElementById('tbody-fijos')!.innerHTML = items.map((item: any) => `
+      <tr class="border-b border-dark-border/30 hover:bg-dark-surface/30">
+        <td class="p-3">
+          <input type="text" value="${item.nombre}" data-id="${item.id}" data-field="nombre"
+            class="w-full bg-transparent text-text-main text-sm focus:outline-none focus:border-b focus:border-accent-amber cf-input">
+        </td>
+        <td class="p-3 text-right">
+          <input type="number" value="${item.monto}" data-id="${item.id}" data-field="monto"
+            class="w-28 bg-dark-bg border border-dark-border rounded-lg px-2 py-1 text-right text-accent-amber text-sm focus:ring-1 focus:ring-accent-amber/50 outline-none cf-input">
+        </td>
+        <td class="p-3 text-center">
+          <input type="checkbox" ${item.activo ? 'checked' : ''} data-id="${item.id}"
+            class="accent-purple-500 w-4 h-4 cf-check">
+        </td>
+        <td class="p-3">
+          <button data-id="${item.id}" class="text-red-400 text-xs hover:text-red-300 btn-del-fijo">✕</button>
+        </td>
+      </tr>
+    `).join('');
+
+    document.querySelectorAll('.cf-input').forEach(el => {
+      el.addEventListener('change', async (e) => {
+        const inp = e.target as HTMLInputElement;
+        const val = inp.dataset.field === 'monto' ? parseFloat(inp.value) : inp.value;
+        await db.from('costos_fijos').update({ [inp.dataset.field!]: val }).eq('id', inp.dataset.id!);
+        renderFijos();
+      });
+    });
+    document.querySelectorAll('.cf-check').forEach(el => {
+      el.addEventListener('change', async (e) => {
+        const inp = e.target as HTMLInputElement;
+        await db.from('costos_fijos').update({ activo: inp.checked }).eq('id', inp.dataset.id!);
+        renderFijos();
+      });
+    });
+    document.querySelectorAll('.btn-del-fijo').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const id = (e.target as HTMLElement).dataset.id!;
+        await db.from('costos_fijos').delete().eq('id', id);
+        renderFijos();
+      });
+    });
+    recalcular();
+  }
+
+  async function renderVariables() {
+    const { data } = await db.from('costos_variables').select('*').order('nombre', { ascending: true });
+    const items = data ?? [];
+    const total = items.reduce((a: number, b: any) => a + b.monto_referencia, 0);
+    const el = document.getElementById('total-variables') as HTMLElement;
+    el.textContent = fmt(total);
+    el.dataset.raw = String(total);
+
+    document.getElementById('tbody-variables')!.innerHTML = items.map((item: any) => `
+      <tr class="border-b border-dark-border/30 hover:bg-dark-surface/30">
+        <td class="p-3">
+          <input type="text" value="${item.nombre}" data-id="${item.id}" data-field="nombre"
+            class="w-full bg-transparent text-text-main text-sm focus:outline-none cv-input">
+        </td>
+        <td class="p-3 text-right">
+          <input type="number" value="${item.monto_referencia}" data-id="${item.id}" data-field="monto_referencia"
+            class="w-28 bg-dark-bg border border-dark-border rounded-lg px-2 py-1 text-right text-accent-amber text-sm focus:ring-1 focus:ring-accent-amber/50 outline-none cv-input">
+        </td>
+        <td class="p-3">
+          <button data-id="${item.id}" class="text-red-400 text-xs hover:text-red-300 btn-del-var">✕</button>
+        </td>
+      </tr>
+    `).join('');
+
+    document.querySelectorAll('.cv-input').forEach(el => {
+      el.addEventListener('change', async (e) => {
+        const inp = e.target as HTMLInputElement;
+        const val = inp.dataset.field === 'monto_referencia' ? parseFloat(inp.value) : inp.value;
+        await db.from('costos_variables').update({ [inp.dataset.field!]: val }).eq('id', inp.dataset.id!);
+        renderVariables();
+      });
+    });
+    document.querySelectorAll('.btn-del-var').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const id = (e.target as HTMLElement).dataset.id!;
+        await db.from('costos_variables').delete().eq('id', id);
+        renderVariables();
+      });
+    });
+    recalcular();
+  }
+
+  document.getElementById('btn-add-fijo')!.addEventListener('click', async () => {
+    const nombre = prompt('Nombre del costo fijo:');
+    if (!nombre?.trim()) return;
+    const monto = parseFloat(prompt('Monto mensual ($):') ?? '0');
+    await db.from('costos_fijos').insert([{ nombre: nombre.trim(), monto, activo: true }]);
+    renderFijos();
+  });
+
+  document.getElementById('btn-add-var')!.addEventListener('click', async () => {
+    const nombre = prompt('Nombre del costo variable:');
+    if (!nombre?.trim()) return;
+    const monto_referencia = parseFloat(prompt('Monto de referencia mensual ($):') ?? '0');
+    await db.from('costos_variables').insert([{ nombre: nombre.trim(), monto_referencia }]);
+    renderVariables();
+  });
+
+  document.getElementById('btn-guardar-pizzas')!.addEventListener('click', async () => {
+    pizzasMes = parseInt((document.getElementById('inp-pizzas-mes') as HTMLInputElement).value);
+    await db.from('config_negocio').update({ pizzas_objetivo_mes: pizzasMes });
+    recalcular();
+  });
+
+  async function init() {
+    const { data: config } = await db.from('config_negocio').select('pizzas_objetivo_mes').limit(1);
+    pizzasMes = config?.[0]?.pizzas_objetivo_mes ?? 800;
+    (document.getElementById('inp-pizzas-mes') as HTMLInputElement).value = String(pizzasMes);
+    await Promise.all([renderFijos(), renderVariables()]);
+  }
+
+  init();
+</script>

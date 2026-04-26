@@ -9,9 +9,13 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
+    "@astrojs/netlify": "^6.6.5",
+    "@insforge/sdk": "^1.2.5",
     "@tailwindcss/vite": "^4.2.2",
     "astro": "^6.1.1",
     "tailwindcss": "^4.2.2"

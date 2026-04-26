@@ -1,0 +1,292 @@
+---
+export const prerender = true;
+import Layout from '../layouts/Layout.astro';
+---
+<Layout title="Recetas">
+  <header class="py-6 mb-4 border-b border-dark-border/50">
+    <h1 class="font-['Outfit'] text-2xl font-bold text-accent-gold">📋 Recetas & Costos</h1>
+    <p class="text-xs text-text-muted mt-1">Costos de producción por pizza — editá directamente en la tabla</p>
+  </header>
+
+  <!-- Lista de recetas -->
+  <div class="flex items-center justify-between mb-4">
+    <select id="select-receta" class="bg-dark-surface border border-dark-border text-text-main py-2 px-3 rounded-xl text-sm focus:ring-2 focus:ring-accent-amber/50 outline-none">
+      <option value="">— Seleccioná una receta —</option>
+    </select>
+    <div class="flex gap-2">
+      <button id="btn-nueva-receta" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-2 rounded-xl transition-all">+ Nueva receta</button>
+      <button id="btn-eliminar-receta" class="bg-red-900/50 hover:bg-red-800 text-red-400 text-xs font-semibold px-3 py-2 rounded-xl transition-all hidden">Eliminar receta</button>
+    </div>
+  </div>
+
+  <!-- Editor de receta -->
+  <div id="editor-receta" class="hidden">
+    <div class="glass-panel rounded-2xl p-5 mb-4">
+      <div class="flex gap-4 mb-4 flex-wrap">
+        <div class="flex-1 min-w-40">
+          <label class="text-[0.65rem] text-text-muted uppercase tracking-wider">Nombre de la pizza</label>
+          <input id="inp-nombre" type="text" class="mt-1 w-full bg-dark-surface border border-dark-border rounded-xl px-3 py-2 text-text-main text-sm focus:ring-2 focus:ring-accent-amber/50 outline-none">
+        </div>
+        <div class="w-32">
+          <label class="text-[0.65rem] text-text-muted uppercase tracking-wider">Prepizza ($)</label>
+          <input id="inp-prepizza" type="number" class="mt-1 w-full bg-dark-surface border border-dark-border rounded-xl px-3 py-2 text-text-main text-sm focus:ring-2 focus:ring-accent-amber/50 outline-none">
+        </div>
+        <div class="w-32">
+          <label class="text-[0.65rem] text-text-muted uppercase tracking-wider">Salsa ($)</label>
+          <input id="inp-salsa" type="number" class="mt-1 w-full bg-dark-surface border border-dark-border rounded-xl px-3 py-2 text-text-main text-sm focus:ring-2 focus:ring-accent-amber/50 outline-none">
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla de ingredientes -->
+    <div class="glass-panel rounded-2xl overflow-hidden mb-4">
+      <div class="flex items-center justify-between p-4 border-b border-dark-border/50">
+        <h2 class="text-xs uppercase tracking-wider text-accent-amber font-bold">Ingredientes</h2>
+        <button id="btn-add-ing" class="bg-emerald-600/20 text-emerald-400 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-emerald-600/40 transition-all">+ Agregar</button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-text-muted text-[0.65rem] uppercase tracking-wider border-b border-dark-border/50">
+              <th class="text-left p-3">Ingrediente</th>
+              <th class="text-right p-3">$/kg</th>
+              <th class="text-right p-3">Cant. (kg)</th>
+              <th class="text-right p-3">Merma</th>
+              <th class="text-right p-3">Costo</th>
+              <th class="p-3"></th>
+            </tr>
+          </thead>
+          <tbody id="tabla-ingredientes"></tbody>
+        </table>
+      </div>
+      <div class="flex justify-between items-center p-4 border-t border-dark-border/50 bg-dark-surface/50">
+        <span class="text-xs text-text-muted uppercase tracking-wider">Costo total pizza</span>
+        <span class="text-xl font-bold text-emerald-400" id="costo-total">$0</span>
+      </div>
+    </div>
+
+    <button id="btn-guardar" class="w-full bg-accent-amber text-dark-bg font-bold py-3 rounded-xl hover:bg-accent-gold transition-all">Guardar receta</button>
+  </div>
+
+  <!-- Tabla de todos los precios de ingredientes -->
+  <div class="glass-panel rounded-2xl overflow-hidden mt-6">
+    <div class="p-4 border-b border-dark-border/50">
+      <h2 class="text-xs uppercase tracking-wider text-accent-amber font-bold">Precios de Ingredientes</h2>
+      <p class="text-[0.65rem] text-text-muted mt-0.5">Editá el precio por kg — actualiza automáticamente todos los costos</p>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-text-muted text-[0.65rem] uppercase tracking-wider border-b border-dark-border/50">
+            <th class="text-left p-3">Ingrediente</th>
+            <th class="text-right p-3">$/kg</th>
+            <th class="text-right p-3">Unidad</th>
+            <th class="p-3"></th>
+          </tr>
+        </thead>
+        <tbody id="tabla-ingredientes-precios"></tbody>
+      </table>
+    </div>
+    <div class="p-4 border-t border-dark-border/50">
+      <button id="btn-add-ingrediente-global" class="bg-dark-surface border border-dark-border text-text-muted text-xs px-3 py-1.5 rounded-lg hover:text-text-main hover:border-accent-amber/50 transition-all">+ Nuevo ingrediente</button>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { insforge } from '../lib/insforge';
+  import { calcCostoReceta } from '../utils/pricing';
+
+  const db = insforge.database;
+  const fmt = (n: number) => '$' + Math.round(n).toLocaleString('es-AR');
+
+  let ingredientesGlobales: any[] = [];
+  let recetaActual: any = null;
+  let ingredientesReceta: any[] = [];
+
+  async function init() {
+    ingredientesGlobales = (await db.from('ingredientes').select('*').order('nombre', { ascending: true })).data ?? [];
+    await cargarSelectRecetas();
+    await renderTablaIngredientesGlobales();
+  }
+
+  async function cargarSelectRecetas() {
+    const { data } = await db.from('recetas').select('id, nombre').order('nombre', { ascending: true });
+    const sel = document.getElementById('select-receta') as HTMLSelectElement;
+    sel.innerHTML = '<option value="">— Seleccioná una receta —</option>';
+    (data ?? []).forEach((r: any) => {
+      sel.innerHTML += `<option value="${r.id}">${r.nombre}</option>`;
+    });
+  }
+
+  document.getElementById('select-receta')!.addEventListener('change', async (e) => {
+    const id = (e.target as HTMLSelectElement).value;
+    if (!id) { document.getElementById('editor-receta')!.classList.add('hidden'); return; }
+    await cargarReceta(id);
+  });
+
+  async function cargarReceta(id: string) {
+    const [{ data: receta }, { data: ings }] = await Promise.all([
+      db.from('recetas').select('*').eq('id', id).single(),
+      db.from('receta_ingredientes').select('*, ingredientes(nombre, precio_kg)').eq('receta_id', id),
+    ]);
+    recetaActual = receta;
+    ingredientesReceta = ings ?? [];
+    (document.getElementById('inp-nombre') as HTMLInputElement).value = receta.nombre;
+    (document.getElementById('inp-prepizza') as HTMLInputElement).value = receta.precio_prepizza;
+    (document.getElementById('inp-salsa') as HTMLInputElement).value = receta.precio_salsa;
+    document.getElementById('editor-receta')!.classList.remove('hidden');
+    document.getElementById('btn-eliminar-receta')!.classList.remove('hidden');
+    renderTablaIngredientesReceta();
+  }
+
+  function renderTablaIngredientesReceta() {
+    const tbody = document.getElementById('tabla-ingredientes')!;
+    const prepizza = parseFloat((document.getElementById('inp-prepizza') as HTMLInputElement).value) || 0;
+    const salsa = parseFloat((document.getElementById('inp-salsa') as HTMLInputElement).value) || 0;
+    tbody.innerHTML = ingredientesReceta.map((ing: any, i: number) => `
+      <tr class="border-b border-dark-border/30 hover:bg-dark-surface/30">
+        <td class="p-3 text-text-main">${ing.ingredientes?.nombre ?? '?'}</td>
+        <td class="p-3 text-right text-accent-amber">${fmt(ing.ingredientes?.precio_kg ?? 0)}</td>
+        <td class="p-3 text-right">
+          <input type="number" step="0.001" value="${ing.cantidad_kg}" data-idx="${i}" data-field="cantidad_kg"
+            class="w-24 bg-dark-bg border border-dark-border rounded-lg px-2 py-1 text-right text-text-main text-xs focus:ring-1 focus:ring-accent-amber/50 outline-none ing-input">
+        </td>
+        <td class="p-3 text-right">
+          <input type="number" step="0.01" value="${ing.merma_factor}" data-idx="${i}" data-field="merma_factor"
+            class="w-20 bg-dark-bg border border-dark-border rounded-lg px-2 py-1 text-right text-text-main text-xs focus:ring-1 focus:ring-accent-amber/50 outline-none ing-input">
+        </td>
+        <td class="p-3 text-right text-text-main font-medium">${fmt((ing.ingredientes?.precio_kg ?? 0) * ing.cantidad_kg * ing.merma_factor)}</td>
+        <td class="p-3">
+          <button data-idx="${i}" class="text-red-400 text-xs hover:text-red-300 btn-del-ing">✕</button>
+        </td>
+      </tr>
+    `).join('');
+
+    document.querySelectorAll('.ing-input').forEach(inp => {
+      inp.addEventListener('change', (e) => {
+        const el = e.target as HTMLInputElement;
+        const idx = parseInt(el.dataset.idx!);
+        const field = el.dataset.field!;
+        ingredientesReceta[idx][field] = parseFloat(el.value);
+        renderTablaIngredientesReceta();
+      });
+    });
+
+    document.querySelectorAll('.btn-del-ing').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const idx = parseInt((e.target as HTMLElement).dataset.idx!);
+        ingredientesReceta.splice(idx, 1);
+        renderTablaIngredientesReceta();
+      });
+    });
+
+    const costo = calcCostoReceta(
+      ingredientesReceta.map((i: any) => ({ precio_kg: i.ingredientes?.precio_kg ?? 0, cantidad_kg: i.cantidad_kg, merma_factor: i.merma_factor })),
+      prepizza, salsa
+    );
+    document.getElementById('costo-total')!.textContent = fmt(costo);
+  }
+
+  document.getElementById('inp-prepizza')!.addEventListener('input', renderTablaIngredientesReceta);
+  document.getElementById('inp-salsa')!.addEventListener('input', renderTablaIngredientesReceta);
+
+  document.getElementById('btn-add-ing')!.addEventListener('click', () => {
+    const nombre = prompt('Ingrediente (seleccioná de la lista):\n' + ingredientesGlobales.map((i: any) => i.nombre).join(', '));
+    const ing = ingredientesGlobales.find((i: any) => i.nombre.toLowerCase() === nombre?.toLowerCase());
+    if (!ing) return alert('Ingrediente no encontrado. Agregalo primero en la tabla de ingredientes.');
+    ingredientesReceta.push({ ingrediente_id: ing.id, cantidad_kg: 0.1, merma_factor: 1.0, ingredientes: ing });
+    renderTablaIngredientesReceta();
+  });
+
+  document.getElementById('btn-nueva-receta')!.addEventListener('click', () => {
+    recetaActual = null;
+    ingredientesReceta = [];
+    (document.getElementById('inp-nombre') as HTMLInputElement).value = '';
+    (document.getElementById('inp-prepizza') as HTMLInputElement).value = '485';
+    (document.getElementById('inp-salsa') as HTMLInputElement).value = '236';
+    (document.getElementById('select-receta') as HTMLSelectElement).value = '';
+    document.getElementById('editor-receta')!.classList.remove('hidden');
+    document.getElementById('btn-eliminar-receta')!.classList.add('hidden');
+    renderTablaIngredientesReceta();
+  });
+
+  document.getElementById('btn-guardar')!.addEventListener('click', async () => {
+    const nombre = (document.getElementById('inp-nombre') as HTMLInputElement).value.trim();
+    const precio_prepizza = parseFloat((document.getElementById('inp-prepizza') as HTMLInputElement).value);
+    const precio_salsa = parseFloat((document.getElementById('inp-salsa') as HTMLInputElement).value);
+    if (!nombre) return alert('Nombre requerido');
+
+    if (recetaActual) {
+      await db.from('recetas').update({ nombre, precio_prepizza, precio_salsa }).eq('id', recetaActual.id);
+      await db.from('receta_ingredientes').delete().eq('receta_id', recetaActual.id);
+    } else {
+      const { data } = await db.from('recetas').insert([{ nombre, precio_prepizza, precio_salsa }]).select('id').single();
+      recetaActual = data;
+    }
+    if (ingredientesReceta.length > 0) {
+      await db.from('receta_ingredientes').insert(ingredientesReceta.map((i: any) => ({
+        receta_id: recetaActual.id, ingrediente_id: i.ingrediente_id,
+        cantidad_kg: i.cantidad_kg, merma_factor: i.merma_factor,
+      })));
+    }
+    await cargarSelectRecetas();
+    alert('Receta guardada ✓');
+  });
+
+  document.getElementById('btn-eliminar-receta')!.addEventListener('click', async () => {
+    if (!recetaActual || !confirm(`¿Eliminar "${recetaActual.nombre}"?`)) return;
+    await db.from('recetas').delete().eq('id', recetaActual.id);
+    recetaActual = null;
+    ingredientesReceta = [];
+    document.getElementById('editor-receta')!.classList.add('hidden');
+    document.getElementById('btn-eliminar-receta')!.classList.add('hidden');
+    await cargarSelectRecetas();
+  });
+
+  async function renderTablaIngredientesGlobales() {
+    const tbody = document.getElementById('tabla-ingredientes-precios')!;
+    tbody.innerHTML = ingredientesGlobales.map((ing: any) => `
+      <tr class="border-b border-dark-border/30 hover:bg-dark-surface/30">
+        <td class="p-3 text-text-main">${ing.nombre}</td>
+        <td class="p-3 text-right">
+          <input type="number" value="${ing.precio_kg}" data-id="${ing.id}"
+            class="w-28 bg-dark-bg border border-dark-border rounded-lg px-2 py-1 text-right text-accent-amber text-sm focus:ring-1 focus:ring-accent-amber/50 outline-none precio-ing-input">
+        </td>
+        <td class="p-3 text-right text-text-muted text-xs">${ing.unidad}</td>
+        <td class="p-3">
+          <button data-id="${ing.id}" class="text-red-400 text-xs hover:text-red-300 btn-del-ing-global">✕</button>
+        </td>
+      </tr>
+    `).join('');
+
+    document.querySelectorAll('.precio-ing-input').forEach(inp => {
+      inp.addEventListener('change', async (e) => {
+        const el = e.target as HTMLInputElement;
+        await db.from('ingredientes').update({ precio_kg: parseFloat(el.value), updated_at: new Date().toISOString() }).eq('id', el.dataset.id!);
+      });
+    });
+
+    document.querySelectorAll('.btn-del-ing-global').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const id = (e.target as HTMLElement).dataset.id!;
+        if (!confirm('¿Eliminar ingrediente? Se eliminará de todas las recetas.')) return;
+        await db.from('ingredientes').delete().eq('id', id);
+        ingredientesGlobales = ingredientesGlobales.filter((i: any) => i.id !== id);
+        renderTablaIngredientesGlobales();
+      });
+    });
+  }
+
+  document.getElementById('btn-add-ingrediente-global')!.addEventListener('click', async () => {
+    const nombre = prompt('Nombre del ingrediente:');
+    if (!nombre?.trim()) return;
+    const precio_kg = parseFloat(prompt('Precio por kg ($):') ?? '0');
+    const unidad = prompt('Unidad (kg/un/l):') ?? 'kg';
+    const { data } = await db.from('ingredientes').insert([{ nombre: nombre.trim(), precio_kg, unidad }]).select('*').single();
+    ingredientesGlobales.push(data);
+    renderTablaIngredientesGlobales();
+  });
+
+  init();
+</script>

@@ -1,0 +1,27 @@
+---
+const navItems = [
+  { href: '/', label: 'Home', icon: '🏠' },
+  { href: '/masa', label: 'Masa', icon: '🧮' },
+  { href: '/recetas', label: 'Recetas', icon: '📋' },
+  { href: '/costos', label: 'Costos', icon: '💼' },
+  { href: '/precios', label: 'Precios', icon: '🏷️' },
+  { href: '/marketing', label: 'Marketing', icon: '🎯' },
+];
+const current = Astro.url.pathname;
+---
+<nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-dark-card border-t border-dark-border/50 z-50">
+  <ul class="flex justify-around items-center h-16 px-2">
+    {navItems.map(item => (
+      <li>
+        <a
+          href={item.href}
+          class={`flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-all
+            ${current === item.href ? 'text-accent-amber' : 'text-text-muted'}`}
+        >
+          <span class="text-xl">{item.icon}</span>
+          <span class="text-[0.55rem] font-medium uppercase tracking-wide">{item.label}</span>
+        </a>
+      </li>
+    ))}
+  </ul>
+</nav>

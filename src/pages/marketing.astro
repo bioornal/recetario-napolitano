@@ -1,0 +1,151 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+<Layout title="Marketing IA">
+  <header class="py-6 mb-4 border-b border-dark-border/50">
+    <h1 class="font-['Outfit'] text-2xl font-bold text-pink-400">🎯 Marketing IA</h1>
+    <p class="text-xs text-text-muted mt-1">Sugerencias generadas con IA basadas en tus costos y márgenes reales</p>
+  </header>
+
+  <div class="flex justify-center mb-6">
+    <button id="btn-generar" class="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-bold px-8 py-3 rounded-2xl transition-all text-sm">
+      ✨ Generar sugerencias
+    </button>
+  </div>
+
+  <div id="loading" class="hidden text-center py-8 text-text-muted text-sm">Analizando tu pizzería con IA...</div>
+  <div id="error-msg" class="hidden glass-panel rounded-2xl p-4 text-red-400 text-sm mb-4"></div>
+
+  <div id="resultado" class="hidden space-y-4">
+    <!-- Combo -->
+    <div class="glass-panel rounded-2xl p-5 border-l-4 border-pink-500">
+      <h2 class="text-xs uppercase tracking-wider text-pink-400 font-bold mb-2">🔥 Combo Sugerido</h2>
+      <p class="font-bold text-text-main text-lg" id="combo-titulo"></p>
+      <p class="text-text-muted text-sm mt-1" id="combo-pizzas"></p>
+      <p class="text-text-muted text-xs mt-1" id="combo-razon"></p>
+      <p class="text-accent-gold font-bold mt-2" id="combo-precio"></p>
+    </div>
+
+    <!-- Promo -->
+    <div class="glass-panel rounded-2xl p-5 border-l-4 border-purple-500">
+      <h2 class="text-xs uppercase tracking-wider text-purple-400 font-bold mb-2">📣 Promo de la Semana</h2>
+      <p class="font-bold text-text-main" id="promo-titulo"></p>
+      <p class="text-text-muted text-sm mt-1" id="promo-desc"></p>
+      <p class="text-text-muted text-xs mt-1" id="promo-razon"></p>
+    </div>
+
+    <!-- Posts -->
+    <div class="grid lg:grid-cols-2 gap-4">
+      <div class="glass-panel rounded-2xl p-5">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-xs uppercase tracking-wider text-pink-400 font-bold">📸 Instagram</h2>
+          <button id="copy-ig" class="text-[0.65rem] text-text-muted hover:text-text-main bg-dark-surface px-2 py-1 rounded-lg">Copiar</button>
+        </div>
+        <p class="text-text-main text-sm leading-relaxed" id="post-ig"></p>
+      </div>
+      <div class="glass-panel rounded-2xl p-5">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-xs uppercase tracking-wider text-emerald-400 font-bold">💬 WhatsApp</h2>
+          <button id="copy-wa" class="text-[0.65rem] text-text-muted hover:text-text-main bg-dark-surface px-2 py-1 rounded-lg">Copiar</button>
+        </div>
+        <p class="text-text-main text-sm leading-relaxed" id="post-wa"></p>
+      </div>
+    </div>
+
+    <!-- Ranking de márgenes -->
+    <div class="glass-panel rounded-2xl p-5">
+      <h2 class="text-xs uppercase tracking-wider text-accent-amber font-bold mb-4">📊 Análisis de Márgenes</h2>
+      <div id="ranking-margenes" class="space-y-2"></div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { insforge } from '../lib/insforge';
+  import { calcCostoOperativoPorPizza, calcCostoRealTotal, calcPrecioEfectivo, calcCostoReceta } from '../utils/pricing';
+
+  const db = insforge.database;
+  const fmt = (n: number) => '$' + Math.round(n).toLocaleString('es-AR');
+
+  document.getElementById('btn-generar')!.addEventListener('click', async () => {
+    document.getElementById('loading')!.classList.remove('hidden');
+    document.getElementById('resultado')!.classList.add('hidden');
+    document.getElementById('error-msg')!.classList.add('hidden');
+
+    try {
+      const [{ data: fijos }, { data: variables }, { data: config }, { data: precios }] = await Promise.all([
+        db.from('costos_fijos').select('monto').eq('activo', true),
+        db.from('costos_variables').select('monto_referencia'),
+        db.from('config_negocio').select('pizzas_objetivo_mes').limit(1),
+        db.from('precios_venta').select('*, recetas(id, precio_prepizza, precio_salsa)').order('nombre', { ascending: true }),
+      ]);
+
+      const totalOp = [...(fijos ?? []).map((c: any) => c.monto), ...(variables ?? []).map((c: any) => c.monto_referencia)]
+        .reduce((a: number, b: number) => a + b, 0);
+      const pizzasMes = config?.[0]?.pizzas_objetivo_mes ?? 800;
+      const costoOpPorPizza = calcCostoOperativoPorPizza(totalOp, pizzasMes);
+
+      const recetasData = await Promise.all((precios ?? []).map(async (p: any) => {
+        let costoIng = 0;
+        if (p.receta_id) {
+          const { data: ings } = await db.from('receta_ingredientes')
+            .select('cantidad_kg, merma_factor, ingredientes(precio_kg)')
+            .eq('receta_id', p.receta_id);
+          costoIng = calcCostoReceta(
+            (ings ?? []).map((i: any) => ({ precio_kg: i.ingredientes?.precio_kg ?? 0, cantidad_kg: i.cantidad_kg, merma_factor: i.merma_factor })),
+            p.recetas?.precio_prepizza ?? 0, p.recetas?.precio_salsa ?? 0
+          );
+        }
+        const costoReal = calcCostoRealTotal(costoIng, costoOpPorPizza);
+        const precioEfectivo = calcPrecioEfectivo(costoReal, p.markup);
+        const margen = costoReal > 0 ? Math.round(((precioEfectivo - costoReal) / precioEfectivo) * 100) : 0;
+        return { nombre: p.nombre, costoReal, precioEfectivo, margen };
+      }));
+
+      const res = await fetch('/api/marketing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recetas: recetasData, costoOpPorPizza, pizzasMes }),
+      });
+
+      if (!res.ok) throw new Error(`Error ${res.status}`);
+      const data = await res.json();
+
+      document.getElementById('combo-titulo')!.textContent = data.combo?.titulo ?? '';
+      document.getElementById('combo-pizzas')!.textContent = data.combo?.pizzas?.join(' + ') ?? '';
+      document.getElementById('combo-razon')!.textContent = data.combo?.razon ?? '';
+      document.getElementById('combo-precio')!.textContent = data.combo?.precio_sugerido ? fmt(data.combo.precio_sugerido) : '';
+      document.getElementById('promo-titulo')!.textContent = data.promo?.titulo ?? '';
+      document.getElementById('promo-desc')!.textContent = data.promo?.descripcion ?? '';
+      document.getElementById('promo-razon')!.textContent = data.promo?.razon ?? '';
+      document.getElementById('post-ig')!.textContent = data.post_instagram ?? '';
+      document.getElementById('post-wa')!.textContent = data.post_whatsapp ?? '';
+
+      const ranking = document.getElementById('ranking-margenes')!;
+      ranking.innerHTML = (data.ranking_margenes ?? []).map((r: any) => `
+        <div class="flex items-center gap-3">
+          <span class="text-text-muted text-xs w-28 truncate">${r.nombre}</span>
+          <div class="flex-1 bg-dark-surface rounded-full h-2">
+            <div class="h-2 rounded-full ${r.margen >= 50 ? 'bg-emerald-500' : r.margen >= 35 ? 'bg-amber-500' : 'bg-red-500'}"
+              style="width: ${Math.min(r.margen, 100)}%"></div>
+          </div>
+          <span class="text-xs font-bold ${r.margen >= 50 ? 'text-emerald-400' : r.margen >= 35 ? 'text-amber-400' : 'text-red-400'}">${r.margen}%</span>
+          <span class="text-[0.6rem] text-text-muted hidden lg:block">${r.recomendacion ?? ''}</span>
+        </div>
+      `).join('');
+
+      document.getElementById('copy-ig')!.addEventListener('click', () =>
+        navigator.clipboard.writeText(data.post_instagram ?? ''));
+      document.getElementById('copy-wa')!.addEventListener('click', () =>
+        navigator.clipboard.writeText(data.post_whatsapp ?? ''));
+
+      document.getElementById('resultado')!.classList.remove('hidden');
+    } catch (err: any) {
+      const el = document.getElementById('error-msg')!;
+      el.textContent = `Error: ${err.message}`;
+      el.classList.remove('hidden');
+    } finally {
+      document.getElementById('loading')!.classList.add('hidden');
+    }
+  });
+</script>
