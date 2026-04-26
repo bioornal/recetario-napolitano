@@ -24,3 +24,9 @@ index.old.html
 
 # PWA generated
 dev-dist/
+
+# Git worktrees
+.worktrees/
+
+# Brainstorm sessions
+.superpowers/
