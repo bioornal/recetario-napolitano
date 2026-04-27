@@ -30,3 +30,6 @@ dev-dist/
 
 # Brainstorm sessions
 .superpowers/
+
+# Local Netlify folder
+.netlify

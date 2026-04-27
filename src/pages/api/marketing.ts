@@ -1,67 +1,55 @@
 import type { APIRoute } from 'astro';
+import { insforge } from '../../lib/insforge';
 
 export const POST: APIRoute = async ({ request }) => {
-  const apiKey = import.meta.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    return new Response(JSON.stringify({ error: 'OPENAI_API_KEY no configurada' }), { status: 500 });
-  }
-
   const { recetas, costoOpPorPizza, pizzasMes } = await request.json();
 
-  const prompt = `Sos un experto en marketing gastronómico especializado en pizzerías argentinas.
-Analizás datos reales de costos y márgenes para dar sugerencias accionables.
-Respondé siempre en español argentino informal.
+  const prompt = `Sos un Director de Marketing y Ventas especializado en pizzerías y gastronomía argentina.
+Tu objetivo principal es maximizar las ganancias. Tenés que analizar estrictamente mis costos y los productos que vendo, y diseñarme planes de marketing, promociones inteligentes y tratamiento de redes sociales.
+Respondé siempre en español argentino, con tono comercial pero informal y directo.
 
 Datos actuales de la pizzería:
 - Costo operativo por pizza: $${costoOpPorPizza}
 - Pizzas objetivo por mes: ${pizzasMes}
-- Recetas disponibles con sus precios de venta:
+- Mis productos (con costo real, precio y margen):
 ${recetas.map((r: any) => `  • ${r.nombre}: costo $${r.costoReal}, precio $${r.precioEfectivo}, margen ${r.margen}%`).join('\n')}
 
-Generá sugerencias concretas. Respondé SOLO con JSON válido con esta estructura exacta:
+En base a estos datos, armá una estrategia súper enfocada en ventas, ofreciendo promociones rentables (fomentando los productos de mayor margen para maximizar ganancia) y dándome copy para tener excelente presencia en redes sociales. 
+
+Generá sugerencias concretas. Respondé SOLO con JSON válido (sin formato markdown) con esta estructura exacta:
 {
   "combo": {
-    "titulo": "nombre del combo",
+    "titulo": "nombre comercial del combo",
     "pizzas": ["pizza1", "pizza2"],
     "precio_sugerido": 12000,
-    "razon": "por qué este combo"
+    "razon": "por qué este combo (justificación estratégica basada en márgenes)"
   },
   "promo": {
-    "titulo": "nombre de la promo",
-    "descripcion": "descripción breve",
-    "razon": "por qué esta promo"
+    "titulo": "nombre de la promo / plan de marketing",
+    "descripcion": "descripción de la campaña promocional",
+    "razon": "justificación financiera y comercial"
   },
-  "post_instagram": "texto para instagram con emojis y hashtags (máx 200 chars)",
-  "post_whatsapp": "mensaje para whatsapp (máx 120 chars)",
+  "post_instagram": "texto para feed/reels de instagram con emojis, hashtags y un fuerte llamado a la acción (CTA) para vender (máx 250 chars)",
+  "post_whatsapp": "mensaje difusion de whatsapp a clientes, muy persuasivo y enfocado en cerrar venta (máx 150 chars)",
   "ranking_margenes": [
-    {"nombre": "pizza", "margen": 60, "recomendacion": "promover más / mantener / revisar precio"}
+    {"nombre": "pizza", "margen": 60, "recomendacion": "táctica específica de venta/marketing para este producto"}
   ]
 }`;
 
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
+  try {
+    const completion = await insforge.ai.chat.completions.create({
+      model: 'openai/gpt-4o-mini',
       messages: [{ role: 'user', content: prompt }],
-      temperature: 0.7,
-      max_tokens: 1000,
-      response_format: { type: 'json_object' },
-    }),
-  });
+    });
 
-  if (!res.ok) {
-    return new Response(JSON.stringify({ error: `OpenAI error: ${res.status}` }), { status: 502 });
+    const content = completion.choices[0].message.content;
+    const cleanContent = content.replace(/^```json\n?/i, '').replace(/```$/i, '').trim();
+
+    return new Response(cleanContent, {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error: any) {
+    return new Response(JSON.stringify({ error: `InsForge AI error: ${error.message}` }), { status: 502 });
   }
-
-  const json = await res.json();
-  const content = json.choices[0].message.content;
-
-  return new Response(content, {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' },
-  });
 };

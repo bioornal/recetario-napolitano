@@ -19,7 +19,38 @@
       "WebFetch(domain:modernistcuisine.com)",
       "WebFetch(domain:www.stadlermade.com)",
       "Bash(find ./src -type f -name *.css)",
-      "Bash(find . -maxdepth 2 -type d ! -path */node_modules* ! -path */.git*)"
+      "Bash(find . -maxdepth 2 -type d ! -path */node_modules* ! -path */.git*)",
+      "mcp__claude_ai_Google_Drive__read_file_content",
+      "mcp__claude_ai_Google_Drive__search_files",
+      "Bash(python *)",
+      "Bash(bash *)",
+      "Bash(npx *)",
+      "Bash(ls -d .worktrees)",
+      "Bash(ls -d worktrees)",
+      "Bash(npm install *)",
+      "Bash(npm test *)",
+      "Bash(npm run *)",
+      "Bash(awk '/^\\\\+\\\\s+\"node_modules\\\\/@astrojs\\\\/netlify\"/,/^\\\\+\\\\s+\\\\}/')",
+      "Bash(awk '/^\\\\+\\\\s+\"node_modules\\\\/@insforge\\\\/sdk\"/,/^\\\\+\\\\s+\\\\}/')",
+      "Bash(node -e ' *)",
+      "mcp__insforge__get-backend-metadata",
+      "mcp__insforge__fetch-docs",
+      "mcp__insforge__run-raw-sql",
+      "mcp__insforge__get-table-schema",
+      "Bash(node -e \"const a = require\\('./node_modules/astro/package.json'\\); const n = require\\('./node_modules/@astrojs/netlify/package.json'\\); console.log\\('astro:', a.version, 'netlify:', n.version\\)\")",
+      "Bash(node -e \"const n = require\\('./node_modules/@astrojs/netlify/package.json'\\); console.log\\('peerDeps:', JSON.stringify\\(n.peerDependencies\\)\\)\")",
+      "Bash(node -e \"const n = require\\('./node_modules/@astrojs/netlify/package.json'\\); console.log\\('netlify version:', n.version\\)\")",
+      "Bash(npm list *)",
+      "mcp__insforge__fetch-sdk-docs",
+      "Bash(python3 -m json.tool)",
+      "Bash(python3 *)",
+      "PowerShell(head *)",
+      "mcp__ide__executeCode",
+      "Read(//c/tmp/**)",
+      "Bash(cat __TRACKED_VAR__/AppData/Local/Temp/pizzeria_data.csv)"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "insforge"
+  ]
 }
