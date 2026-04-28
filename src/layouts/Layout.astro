@@ -37,3 +37,10 @@ const { title = 'El Fogon' } = Astro.props;
   </div>
 </body>
 </html>
+
+<script>
+  import { insforge } from '../lib/insforge';
+
+  const { data } = await insforge.auth.getCurrentUser();
+  if (!data?.user) window.location.replace('/login');
+</script>

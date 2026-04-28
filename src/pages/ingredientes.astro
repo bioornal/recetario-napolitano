@@ -27,7 +27,9 @@ import Layout from '../layouts/Layout.astro';
             <th class="p-3"></th>
           </tr>
         </thead>
-        <tbody id="tabla-ingredientes-precios"></tbody>
+        <tbody id="tabla-ingredientes-precios">
+          <tr><td colspan="5" class="p-6 text-center text-text-muted text-sm">Cargando ingredientes...</td></tr>
+        </tbody>
       </table>
     </div>
   </div>
@@ -35,9 +37,9 @@ import Layout from '../layouts/Layout.astro';
 
 <script>
   import { insforge } from '../lib/insforge';
+  import { TIPOS, showDbError, escapeHtml } from '../utils/fmt';
 
   const db = insforge.database;
-  const TIPOS = ['Quesos', 'Carnes', 'Fiambres', 'Verduras y Frutas', 'Harinas y Masas', 'Salsas y Condimentos', 'Varios'] as const;
 
   let ingredientesGlobales: any[] = [];
 
@@ -65,18 +67,18 @@ import Layout from '../layouts/Layout.astro';
       </tr>`;
       html += ings.map((ing: any) => `
         <tr class="border-b border-dark-border/20 hover:bg-dark-surface/30">
-          <td class="p-3 pl-5 text-text-main">${ing.nombre}</td>
+          <td class="p-3 pl-5 text-text-main">${escapeHtml(ing.nombre)}</td>
           <td class="p-3 text-right">
-            <input type="number" value="${ing.precio_kg}" data-id="${ing.id}" data-field="precio_kg"
+            <input type="number" value="${escapeHtml(ing.precio_kg)}" data-id="${escapeHtml(ing.id)}" data-field="precio_kg"
               class="w-24 bg-dark-bg border border-dark-border rounded-lg px-2 py-1 text-right text-accent-amber text-sm focus:ring-1 focus:ring-accent-amber/50 outline-none global-ing-input">
           </td>
           <td class="p-3 text-right">
-            <input type="number" step="0.01" value="${ing.multiplo_rendimiento ?? 1}" data-id="${ing.id}" data-field="multiplo_rendimiento"
+            <input type="number" step="0.01" value="${escapeHtml(ing.multiplo_rendimiento ?? 1)}" data-id="${escapeHtml(ing.id)}" data-field="multiplo_rendimiento"
               class="w-20 bg-dark-bg border border-dark-border rounded-lg px-2 py-1 text-right text-emerald-400 text-sm focus:ring-1 focus:ring-emerald-400/50 outline-none global-ing-input">
           </td>
-          <td class="p-3 text-right text-text-muted text-xs">${ing.unidad}</td>
+          <td class="p-3 text-right text-text-muted text-xs">${escapeHtml(ing.unidad)}</td>
           <td class="p-3">
-            <button data-id="${ing.id}" class="text-red-400 text-xs hover:text-red-300 btn-del-ing-global">✕</button>
+            <button data-id="${escapeHtml(ing.id)}" class="text-red-400 text-xs hover:text-red-300 btn-del-ing-global">✕</button>
           </td>
         </tr>
       `).join('');
@@ -121,5 +123,5 @@ import Layout from '../layouts/Layout.astro';
     renderTablaIngredientesGlobales();
   });
 
-  init();
+  init().catch(showDbError);
 </script>

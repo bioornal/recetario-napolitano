@@ -10,7 +10,7 @@ import Layout from '../layouts/Layout.astro';
 
   <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8" id="metricas">
     <div class="glass-panel rounded-2xl p-4">
-      <p class="text-[0.65rem] text-text-muted uppercase tracking-wider mb-1">Costo Prom. x Pizza</p>
+      <p class="text-[0.65rem] text-text-muted uppercase tracking-wider mb-1">Costo Op. / Pizza</p>
       <p class="text-2xl font-bold text-accent-gold" id="m-costo-pizza">—</p>
     </div>
     <div class="glass-panel rounded-2xl p-4">
@@ -59,6 +59,7 @@ import Layout from '../layouts/Layout.astro';
 <script>
   import { insforge } from '../lib/insforge';
   import { calcCostoOperativoPorPizza } from '../utils/pricing';
+  import { fmt, showDbError } from '../utils/fmt';
 
   async function loadMetricas() {
     const db = insforge.database;
@@ -77,12 +78,11 @@ import Layout from '../layouts/Layout.astro';
     const pizzasMes = config.data?.[0]?.pizzas_objetivo_mes ?? 800;
     const costoPorPizza = calcCostoOperativoPorPizza(totalOp, pizzasMes);
 
-    const fmt = (n: number) => '$' + Math.round(n).toLocaleString('es-AR');
     document.getElementById('m-costo-pizza')!.textContent = fmt(costoPorPizza);
     document.getElementById('m-costos-op')!.textContent = fmt(totalOp);
     document.getElementById('m-recetas')!.textContent = String(recetas.data?.length ?? 0);
     document.getElementById('m-pizzas')!.textContent = String(pizzasMes);
   }
 
-  loadMetricas();
+  loadMetricas().catch(showDbError);
 </script>

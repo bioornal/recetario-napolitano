@@ -60,15 +60,15 @@ describe('margenToMarkup', () => {
 describe('calcCostoReceta', () => {
   test('suma prepizza + salsa + ingredientes con merma', () => {
     const ingredientes = [
-      { precio_kg: 16000, cantidad_kg: 0.2, merma_factor: 1.0 }, // 3200
-      { precio_kg: 20000, cantidad_kg: 0.005, merma_factor: 1.0 }, // 100
+      { precio_kg: 16000, cantidad_kg: 0.2, multiplo_rendimiento: 1.0 }, // 3200
+      { precio_kg: 20000, cantidad_kg: 0.005, multiplo_rendimiento: 1.0 }, // 100
     ];
     // prepizza 485 + salsa 236 + 3200 + 100 = 4021
     expect(calcCostoReceta(ingredientes, 485, 236)).toBe(4021);
   });
   test('aplica factor de merma a la cantidad', () => {
     const ingredientes = [
-      { precio_kg: 10000, cantidad_kg: 0.1, merma_factor: 1.2 }, // 1200
+      { precio_kg: 10000, cantidad_kg: 0.1, multiplo_rendimiento: 1.2 }, // 1200
     ];
     expect(calcCostoReceta(ingredientes, 0, 0)).toBe(1200);
   });

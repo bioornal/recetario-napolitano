@@ -11,7 +11,7 @@ import Layout from '../layouts/Layout.astro';
   <!-- Lista de recetas -->
   <div class="flex items-center justify-between mb-4">
     <select id="select-receta" class="bg-dark-surface border border-dark-border text-text-main py-2 px-3 rounded-xl text-sm focus:ring-2 focus:ring-accent-amber/50 outline-none">
-      <option value="">— Seleccioná una receta —</option>
+      <option value="">Cargando recetas...</option>
     </select>
     <div class="flex gap-2">
       <button id="btn-nueva-receta" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-2 rounded-xl transition-all">+ Nueva receta</button>
@@ -104,11 +104,9 @@ import Layout from '../layouts/Layout.astro';
 <script>
   import { insforge } from '../lib/insforge';
   import { calcCostoReceta } from '../utils/pricing';
+  import { fmt, TIPOS, showDbError, escapeHtml } from '../utils/fmt';
 
   const db = insforge.database;
-  const fmt = (n: number) => '$' + Math.round(n).toLocaleString('es-AR');
-
-  const TIPOS = ['Quesos', 'Carnes', 'Fiambres', 'Verduras y Frutas', 'Harinas y Masas', 'Salsas y Condimentos', 'Varios'] as const;
 
   let ingredientesGlobales: any[] = [];
   let recetaActual: any = null;
@@ -186,7 +184,7 @@ import Layout from '../layouts/Layout.astro';
       
       html += `
         <tr class="border-b border-dark-border/20 hover:bg-dark-surface/30">
-          <td class="p-3 text-text-main">${globalIng?.nombre ?? '?'}</td>
+          <td class="p-3 text-text-main">${escapeHtml(globalIng?.nombre ?? '?')}</td>
           <td class="p-3 text-right text-accent-amber">${fmt(globalIng?.precio_kg ?? 0)}</td>
           <td class="p-3 text-right">
             <input type="number" step="0.001" value="${cantNeta}" data-idx="${i}" data-field="cantidad_kg"
@@ -251,7 +249,7 @@ import Layout from '../layouts/Layout.astro';
     const costo = calcCostoReceta(
       ingredientesReceta.map((i: any) => {
         const g = ingredientesGlobales.find((x: any) => x.id === (i.ingrediente_id ?? i.ingredientes?.id));
-        return { precio_kg: g?.precio_kg ?? 0, cantidad_kg: i.cantidad_kg, merma_factor: g?.multiplo_rendimiento ?? 1 };
+        return { precio_kg: g?.precio_kg ?? 0, cantidad_kg: i.cantidad_kg, multiplo_rendimiento: g?.multiplo_rendimiento ?? 1 };
       }),
       prepizza, salsa
     );
@@ -337,21 +335,36 @@ import Layout from '../layouts/Layout.astro';
     const rend_valor = parseFloat((document.getElementById(rend_tipo === 'peso' ? 'inp-gramos-unidad' : 'inp-unidades-directo') as HTMLInputElement).value) || 1;
     if (!nombre) return alert('Nombre requerido');
 
-    if (recetaActual) {
-      await db.from('recetas').update({ nombre, precio_prepizza, precio_salsa, rend_tipo, rend_valor }).eq('id', recetaActual.id);
-      await db.from('receta_ingredientes').delete().eq('receta_id', recetaActual.id);
-    } else {
-      const { data } = await db.from('recetas').insert([{ nombre, precio_prepizza, precio_salsa, rend_tipo, rend_valor }]).select('id').single();
-      recetaActual = data;
+    try {
+      if (recetaActual) {
+        await db.from('recetas').update({ nombre, precio_prepizza, precio_salsa, rend_tipo, rend_valor }).eq('id', recetaActual.id);
+        const snapshot = ingredientesReceta.map((i: any) => ({
+          receta_id: recetaActual.id, ingrediente_id: i.ingrediente_id,
+          cantidad_kg: i.cantidad_kg, merma_factor: i.merma_factor ?? 1,
+        }));
+        await db.from('receta_ingredientes').delete().eq('receta_id', recetaActual.id);
+        if (snapshot.length > 0) {
+          const { error } = await db.from('receta_ingredientes').insert(snapshot);
+          if (error) {
+            await db.from('receta_ingredientes').insert(snapshot.map(r => ({ ...r })));
+            throw error;
+          }
+        }
+      } else {
+        const { data } = await db.from('recetas').insert([{ nombre, precio_prepizza, precio_salsa, rend_tipo, rend_valor }]).select('id').single();
+        recetaActual = data;
+        if (ingredientesReceta.length > 0) {
+          await db.from('receta_ingredientes').insert(ingredientesReceta.map((i: any) => ({
+            receta_id: recetaActual.id, ingrediente_id: i.ingrediente_id,
+            cantidad_kg: i.cantidad_kg, merma_factor: i.merma_factor ?? 1,
+          })));
+        }
+      }
+      await cargarSelectRecetas();
+      alert('Receta guardada ✓');
+    } catch {
+      alert('Error al guardar. Recargá la página para verificar el estado.');
     }
-    if (ingredientesReceta.length > 0) {
-      await db.from('receta_ingredientes').insert(ingredientesReceta.map((i: any) => ({
-        receta_id: recetaActual.id, ingrediente_id: i.ingrediente_id,
-        cantidad_kg: i.cantidad_kg, merma_factor: i.merma_factor,
-      })));
-    }
-    await cargarSelectRecetas();
-    alert('Receta guardada ✓');
   });
 
   document.getElementById('btn-eliminar-receta')!.addEventListener('click', async () => {
@@ -366,5 +379,5 @@ import Layout from '../layouts/Layout.astro';
 
 
 
-  init();
+  init().catch(showDbError);
 </script>

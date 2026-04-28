@@ -3,12 +3,12 @@ export function calcCostoOperativoPorPizza(totalCostosMes: number, pizzasMes: nu
   return Math.round(totalCostosMes / pizzasMes);
 }
 
-/** Unidades que rinde una receta según MR (cantidad_kg / merma_factor) y gramos por unidad */
+/** Unidades que rinde una receta según MR y gramos por unidad */
 export function calcUnidadesReceta(
-  ingredientes: Array<{ cantidad_kg: number; merma_factor: number }>,
+  ingredientes: Array<{ cantidad_kg: number; multiplo_rendimiento: number }>,
   gramosPorUnidad = 65
 ): number {
-  const totalMR = ingredientes.reduce((acc, i) => acc + i.cantidad_kg / (i.merma_factor || 1), 0);
+  const totalMR = ingredientes.reduce((acc, i) => acc + i.cantidad_kg / (i.multiplo_rendimiento || 1), 0);
   return Math.floor((totalMR * 1000) / gramosPorUnidad);
 }
 
@@ -20,6 +20,7 @@ export function markupToMargen(markup: number): number {
 
 /** margen % → markup multiplicador. Ej: 37.5 → 1.6 */
 export function margenToMarkup(margenPct: number): number {
+  if (margenPct <= 0) return 1;
   if (margenPct >= 100) return 999;
   return 1 / (1 - margenPct / 100);
 }
@@ -33,12 +34,12 @@ export function calcPrecioEfectivo(costoRealTotal: number, markup: number): numb
 }
 
 export function calcCostoReceta(
-  ingredientes: Array<{ precio_kg: number; cantidad_kg: number; merma_factor: number }>,
+  ingredientes: Array<{ precio_kg: number; cantidad_kg: number; multiplo_rendimiento: number }>,
   precioPrepizza: number,
   precioSalsa: number
 ): number {
   const costoIngredientes = ingredientes.reduce((acc, ing) => {
-    return acc + Math.round(ing.precio_kg * ing.cantidad_kg * ing.merma_factor);
+    return acc + Math.round(ing.precio_kg * ing.cantidad_kg * ing.multiplo_rendimiento);
   }, 0);
   return precioPrepizza + precioSalsa + costoIngredientes;
 }

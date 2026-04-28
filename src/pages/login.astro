@@ -1,0 +1,102 @@
+---
+export const prerender = true;
+import '../styles/global.css';
+---
+<!DOCTYPE html>
+<html lang="es" class="bg-dark-bg">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1a1410">
+  <title>Acceso — El Fogon</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="font-['Inter',sans-serif] antialiased min-h-screen text-text-main flex items-center justify-center p-4">
+
+  <div class="fixed inset-0 pointer-events-none">
+    <div class="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-accent-amber/10 blur-[100px]"></div>
+    <div class="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-accent-gold/5 blur-[100px]"></div>
+  </div>
+
+  <div class="relative z-10 w-full max-w-sm">
+    <div class="text-center mb-8">
+      <h1 class="font-['Outfit'] text-4xl font-bold bg-gradient-to-r from-accent-gold to-accent-amber text-transparent bg-clip-text">El Fogon</h1>
+      <p class="text-text-muted text-xs uppercase tracking-widest mt-1">Pizzería Napolitana</p>
+    </div>
+
+    <div class="glass-panel rounded-2xl p-6">
+      <h2 class="text-sm font-semibold text-text-main mb-5 uppercase tracking-wider">Acceso al dashboard</h2>
+
+      <div id="error-msg" class="hidden mb-4 bg-red-900/40 border border-red-500/30 text-red-300 text-sm px-4 py-3 rounded-xl"></div>
+
+      <form id="login-form" class="flex flex-col gap-4">
+        <div>
+          <label class="text-[0.65rem] text-text-muted uppercase tracking-wider">Email</label>
+          <input
+            id="inp-email"
+            type="email"
+            autocomplete="email"
+            placeholder="tu@email.com"
+            class="mt-1 w-full bg-dark-surface border border-dark-border rounded-xl px-3 py-2.5 text-text-main text-sm focus:ring-2 focus:ring-accent-amber/50 outline-none placeholder:text-text-muted/50"
+          >
+        </div>
+        <div>
+          <label class="text-[0.65rem] text-text-muted uppercase tracking-wider">Contraseña</label>
+          <input
+            id="inp-password"
+            type="password"
+            autocomplete="current-password"
+            placeholder="••••••••"
+            class="mt-1 w-full bg-dark-surface border border-dark-border rounded-xl px-3 py-2.5 text-text-main text-sm focus:ring-2 focus:ring-accent-amber/50 outline-none placeholder:text-text-muted/50"
+          >
+        </div>
+        <button
+          type="submit"
+          id="btn-login"
+          class="w-full bg-accent-amber hover:bg-accent-gold text-dark-bg font-bold py-3 rounded-xl transition-all mt-1"
+        >
+          Ingresar
+        </button>
+      </form>
+    </div>
+  </div>
+
+</body>
+</html>
+
+<script>
+  import { insforge } from '../lib/insforge';
+
+  const form = document.getElementById('login-form')!;
+  const errorEl = document.getElementById('error-msg')!;
+  const btn = document.getElementById('btn-login') as HTMLButtonElement;
+
+  // Si ya hay sesión activa, ir directo al dashboard
+  insforge.auth.getCurrentUser().then(({ data }) => {
+    if (data?.user) window.location.replace('/');
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errorEl.classList.add('hidden');
+    btn.disabled = true;
+    btn.textContent = 'Ingresando...';
+
+    const email = (document.getElementById('inp-email') as HTMLInputElement).value.trim();
+    const password = (document.getElementById('inp-password') as HTMLInputElement).value;
+
+    const { error } = await insforge.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      errorEl.textContent = 'Email o contraseña incorrectos.';
+      errorEl.classList.remove('hidden');
+      btn.disabled = false;
+      btn.textContent = 'Ingresar';
+    } else {
+      window.location.replace('/');
+    }
+  });
+</script>
