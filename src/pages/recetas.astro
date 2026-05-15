@@ -135,7 +135,7 @@ import Layout from '../layouts/Layout.astro';
   async function cargarReceta(id: string) {
     const [{ data: receta }, { data: ings }] = await Promise.all([
       db.from('recetas').select('*').eq('id', id).single(),
-      db.from('receta_ingredientes').select('*, ingredientes(nombre, precio_kg)').eq('receta_id', id),
+      db.from('receta_ingredientes').select('*').eq('receta_id', id),
     ]);
     recetaActual = receta;
     ingredientesReceta = ings ?? [];

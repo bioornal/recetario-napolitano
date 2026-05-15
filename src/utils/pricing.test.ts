@@ -4,6 +4,7 @@ import {
   calcCostoRealTotal,
   calcPrecioEfectivo,
   calcCostoReceta,
+  calcUnidadesReceta,
   markupToMargen,
   margenToMarkup,
 } from './pricing';
@@ -54,6 +55,26 @@ describe('margenToMarkup', () => {
   test('roundtrip: markup → margen → markup', () => {
     const original = 1.6;
     expect(margenToMarkup(markupToMargen(original))).toBeCloseTo(original, 5);
+  });
+});
+
+describe('calcUnidadesReceta', () => {
+  test('calcula unidades por peso ignorando MR (MR solo afecta costo, no volumen)', () => {
+    const ings = [
+      { cantidad_kg: 0.5, multiplo_rendimiento: 1.2 }, // 500g netos
+      { cantidad_kg: 0.3, multiplo_rendimiento: 1.5 }, // 300g netos
+    ];
+    // 800g total / 65g por unidad = 12 unidades
+    expect(calcUnidadesReceta(ings, 65)).toBe(12);
+  });
+  test('resultado coincide con cálculo directo de recetas.astro (totalCantNeta)', () => {
+    const ings = [{ cantidad_kg: 1.0, multiplo_rendimiento: 2.0 }];
+    // 1000g / 65 = 15 unidades (sin dividir por MR)
+    expect(calcUnidadesReceta(ings, 65)).toBe(15);
+  });
+  test('usa gramosPorUnidad por defecto de 65g', () => {
+    const ings = [{ cantidad_kg: 0.065, multiplo_rendimiento: 1.0 }];
+    expect(calcUnidadesReceta(ings)).toBe(1);
   });
 });
 

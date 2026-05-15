@@ -91,24 +91,42 @@ import Layout from '../layouts/Layout.astro';
   }
 
   async function renderTabla() {
-    const { data: precios } = await db
-      .from('precios_venta')
-      .select('*, recetas(precio_prepizza, precio_salsa, receta_ingredientes(cantidad_kg, ingredientes(precio_kg, multiplo_rendimiento)))')
-      .order('nombre', { ascending: true });
+    const [
+      { data: precios },
+      { data: recetas },
+      { data: recetaIngs },
+      { data: ingredientes },
+    ] = await Promise.all([
+      db.from('precios_venta').select('*').order('nombre', { ascending: true }),
+      db.from('recetas').select('id, precio_prepizza, precio_salsa'),
+      db.from('receta_ingredientes').select('*'),
+      db.from('ingredientes').select('id, precio_kg, multiplo_rendimiento'),
+    ]);
+
+    const recetasMap = new Map((recetas ?? []).map((r: any) => [r.id, r]));
+    const ingMap = new Map((ingredientes ?? []).map((i: any) => [i.id, i]));
+    const riByReceta = new Map<string, any[]>();
+    for (const ri of (recetaIngs ?? [])) {
+      if (!riByReceta.has(ri.receta_id)) riByReceta.set(ri.receta_id, []);
+      riByReceta.get(ri.receta_id)!.push(ri);
+    }
 
     const porCategoria = new Map<string, any[]>();
     for (const cat of CATEGORIAS) porCategoria.set(cat, []);
 
     for (const item of (precios ?? [])) {
       const cat = CATEGORIAS.includes(item.subcategoria) ? item.subcategoria : 'Otros';
-      const receta = item.recetas;
+      const receta = item.receta_id ? recetasMap.get(item.receta_id) : null;
       let costoIng = 0;
       if (receta) {
-        const ings = (receta.receta_ingredientes ?? []).map((i: any) => ({
-          precio_kg: i.ingredientes?.precio_kg ?? 0,
-          cantidad_kg: i.cantidad_kg,
-          multiplo_rendimiento: i.ingredientes?.multiplo_rendimiento ?? 1,
-        }));
+        const ings = (riByReceta.get(receta.id) ?? []).map((ri: any) => {
+          const ing = ingMap.get(ri.ingrediente_id);
+          return {
+            precio_kg: Number(ing?.precio_kg ?? 0),
+            cantidad_kg: Number(ri.cantidad_kg),
+            multiplo_rendimiento: Number(ing?.multiplo_rendimiento ?? 1),
+          };
+        });
         const costoReceta = calcCostoReceta(ings, receta.precio_prepizza, receta.precio_salsa);
         if (cat === 'Empanadas') {
           const unidades = calcUnidadesReceta(ings);

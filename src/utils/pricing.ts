@@ -3,13 +3,13 @@ export function calcCostoOperativoPorPizza(totalCostosMes: number, pizzasMes: nu
   return Math.round(totalCostosMes / pizzasMes);
 }
 
-/** Unidades que rinde una receta según MR y gramos por unidad */
+/** Unidades que rinde una receta por peso (empanadas). Usa cantidad neta; MR solo afecta el costo. */
 export function calcUnidadesReceta(
-  ingredientes: Array<{ cantidad_kg: number; multiplo_rendimiento: number }>,
+  ingredientes: Array<{ cantidad_kg: number; multiplo_rendimiento?: number }>,
   gramosPorUnidad = 65
 ): number {
-  const totalMR = ingredientes.reduce((acc, i) => acc + i.cantidad_kg / (i.multiplo_rendimiento || 1), 0);
-  return Math.floor((totalMR * 1000) / gramosPorUnidad);
+  const totalNeta = ingredientes.reduce((acc, i) => acc + i.cantidad_kg, 0);
+  return Math.floor((totalNeta * 1000) / gramosPorUnidad);
 }
 
 /** markup → margen % sobre precio. Ej: 1.6 → 37.5 */
@@ -39,7 +39,7 @@ export function calcCostoReceta(
   precioSalsa: number
 ): number {
   const costoIngredientes = ingredientes.reduce((acc, ing) => {
-    return acc + Math.round(ing.precio_kg * ing.cantidad_kg * ing.multiplo_rendimiento);
+    return acc + ing.precio_kg * ing.cantidad_kg * ing.multiplo_rendimiento;
   }, 0);
-  return precioPrepizza + precioSalsa + costoIngredientes;
+  return Math.round(precioPrepizza + precioSalsa + costoIngredientes);
 }
