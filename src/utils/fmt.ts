@@ -19,3 +19,21 @@ export function showDbError(err?: unknown) {
   document.body.appendChild(el);
   console.error(err);
 }
+
+// InsForge tiene nodos del load balancer que devuelven 404 espurio en PATCH/POST.
+// Este helper reintenta hasta 4 veces con backoff corto — suele caer en un nodo sano.
+export async function dbWrite<T extends { error?: any; status?: number }>(
+  fn: () => Promise<T>,
+  maxAttempts = 4,
+): Promise<T> {
+  let last: T | undefined;
+  for (let i = 0; i < maxAttempts; i++) {
+    const res = await fn();
+    last = res;
+    const status = res?.status;
+    const has404 = status === 404;
+    if (!has404 && !res?.error) return res;
+    if (i < maxAttempts - 1) await new Promise(r => setTimeout(r, 150 + i * 250));
+  }
+  return last!;
+}

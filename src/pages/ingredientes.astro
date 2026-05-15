@@ -41,7 +41,7 @@ import Layout from '../layouts/Layout.astro';
 
 <script>
   import { insforge } from '../lib/insforge';
-  import { TIPOS, showDbError, escapeHtml } from '../utils/fmt';
+  import { TIPOS, showDbError, escapeHtml, dbWrite } from '../utils/fmt';
 
   const db = insforge.database;
 
@@ -109,7 +109,7 @@ import Layout from '../layouts/Layout.astro';
         const ing = ingredientesGlobales.find(i => i.id === el.dataset.id);
         if (ing) ing[field] = val;
         
-        await db.from('ingredientes').update({ [field]: val }).eq('id', el.dataset.id!);
+        await dbWrite(() => db.from('ingredientes').update({ [field]: val }).eq('id', el.dataset.id!).select());
       });
     });
 
@@ -117,7 +117,7 @@ import Layout from '../layouts/Layout.astro';
       btn.addEventListener('click', async () => {
         const id = (btn as HTMLElement).dataset.id!;
         if (!confirm('¿Eliminar ingrediente? Se eliminará de todas las recetas.')) return;
-        await db.from('ingredientes').delete().eq('id', id);
+        await dbWrite(() => db.from('ingredientes').delete().eq('id', id));
         ingredientesGlobales = ingredientesGlobales.filter((i: any) => i.id !== id);
         renderTablaIngredientesGlobales();
       });
@@ -132,7 +132,7 @@ import Layout from '../layouts/Layout.astro';
     const tiposStr = TIPOS.map((t, i) => `${i + 1}. ${t}`).join('\n');
     const tipoIdx = parseInt(prompt(`Tipo:\n${tiposStr}`) ?? '6') - 1;
     const tipo = (tipoIdx >= 0 && tipoIdx < TIPOS.length) ? TIPOS[tipoIdx] : 'Varios';
-    const { data } = await db.from('ingredientes').insert([{ nombre: nombre.trim(), precio_kg, unidad, tipo }]).select('*').single();
+    const { data } = await dbWrite(() => db.from('ingredientes').insert([{ nombre: nombre.trim(), precio_kg, unidad, tipo }]).select('*').single());
     ingredientesGlobales.push(data);
     ingredientesGlobales.sort((a: any, b: any) => a.nombre.localeCompare(b.nombre));
     renderTablaIngredientesGlobales();

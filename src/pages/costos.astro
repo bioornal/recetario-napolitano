@@ -92,7 +92,7 @@ import Layout from '../layouts/Layout.astro';
 <script>
   import { insforge } from '../lib/insforge';
   import { calcCostoOperativoPorPizza } from '../utils/pricing';
-  import { fmt, showDbError, escapeHtml } from '../utils/fmt';
+  import { fmt, showDbError, escapeHtml, dbWrite } from '../utils/fmt';
 
   const db = insforge.database;
   let pizzasMes = 800;
@@ -140,21 +140,21 @@ import Layout from '../layouts/Layout.astro';
       el.addEventListener('change', async (e) => {
         const inp = e.target as HTMLInputElement;
         const val = inp.dataset.field === 'monto' ? parseFloat(inp.value) : inp.value;
-        await db.from('costos_fijos').update({ [inp.dataset.field!]: val }).eq('id', inp.dataset.id!);
+        await dbWrite(() => db.from('costos_fijos').update({ [inp.dataset.field!]: val }).eq('id', inp.dataset.id!).select());
         renderFijos();
       });
     });
     document.querySelectorAll('.cf-check').forEach(el => {
       el.addEventListener('change', async (e) => {
         const inp = e.target as HTMLInputElement;
-        await db.from('costos_fijos').update({ activo: inp.checked }).eq('id', inp.dataset.id!);
+        await dbWrite(() => db.from('costos_fijos').update({ activo: inp.checked }).eq('id', inp.dataset.id!).select());
         renderFijos();
       });
     });
     document.querySelectorAll('.btn-del-fijo').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         const id = (e.target as HTMLElement).dataset.id!;
-        await db.from('costos_fijos').delete().eq('id', id);
+        await dbWrite(() => db.from('costos_fijos').delete().eq('id', id));
         renderFijos();
       });
     });
@@ -189,14 +189,14 @@ import Layout from '../layouts/Layout.astro';
       el.addEventListener('change', async (e) => {
         const inp = e.target as HTMLInputElement;
         const val = inp.dataset.field === 'monto_referencia' ? parseFloat(inp.value) : inp.value;
-        await db.from('costos_variables').update({ [inp.dataset.field!]: val }).eq('id', inp.dataset.id!);
+        await dbWrite(() => db.from('costos_variables').update({ [inp.dataset.field!]: val }).eq('id', inp.dataset.id!).select());
         renderVariables();
       });
     });
     document.querySelectorAll('.btn-del-var').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         const id = (e.target as HTMLElement).dataset.id!;
-        await db.from('costos_variables').delete().eq('id', id);
+        await dbWrite(() => db.from('costos_variables').delete().eq('id', id));
         renderVariables();
       });
     });
@@ -207,7 +207,7 @@ import Layout from '../layouts/Layout.astro';
     const nombre = prompt('Nombre del costo fijo:');
     if (!nombre?.trim()) return;
     const monto = parseFloat(prompt('Monto mensual ($):') ?? '0');
-    await db.from('costos_fijos').insert([{ nombre: nombre.trim(), monto, activo: true }]).select();
+    await dbWrite(() => db.from('costos_fijos').insert([{ nombre: nombre.trim(), monto, activo: true }]).select());
     renderFijos();
   });
 
@@ -215,13 +215,13 @@ import Layout from '../layouts/Layout.astro';
     const nombre = prompt('Nombre del costo variable:');
     if (!nombre?.trim()) return;
     const monto_referencia = parseFloat(prompt('Monto de referencia mensual ($):') ?? '0');
-    await db.from('costos_variables').insert([{ nombre: nombre.trim(), monto_referencia }]).select();
+    await dbWrite(() => db.from('costos_variables').insert([{ nombre: nombre.trim(), monto_referencia }]).select());
     renderVariables();
   });
 
   document.getElementById('btn-guardar-pizzas')!.addEventListener('click', async () => {
     pizzasMes = parseInt((document.getElementById('inp-pizzas-mes') as HTMLInputElement).value);
-    if (configId) await db.from('config_negocio').update({ pizzas_objetivo_mes: pizzasMes }).eq('id', configId);
+    if (configId) await dbWrite(() => db.from('config_negocio').update({ pizzas_objetivo_mes: pizzasMes }).eq('id', configId).select());
     recalcular();
   });
 

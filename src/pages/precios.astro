@@ -60,7 +60,7 @@ import Layout from '../layouts/Layout.astro';
 <script>
   import { insforge } from '../lib/insforge';
   import { calcCostoOperativoPorPizza, calcCostoReceta, calcCostoRealTotal, calcPrecioEfectivo, markupToMargen, margenToMarkup, calcUnidadesReceta } from '../utils/pricing';
-  import { fmt, showDbError, escapeHtml } from '../utils/fmt';
+  import { fmt, showDbError, escapeHtml, dbWrite } from '../utils/fmt';
 
   const db = insforge.database;
   let costoOpPorPizza = 0;
@@ -209,7 +209,7 @@ import Layout from '../layouts/Layout.astro';
         const el = e.target as HTMLInputElement;
         const margen = parseFloat(el.value);
         const newMarkup = margenToMarkup(margen);
-        await db.from('precios_venta').update({ markup: newMarkup }).eq('id', el.dataset.id!);
+        await dbWrite(() => db.from('precios_venta').update({ markup: newMarkup }).eq('id', el.dataset.id!).select());
         const row = el.closest('tr') as HTMLElement;
         row.querySelector('.precio-efectivo')!.textContent = fmt(calcPrecioEfectivo(parseFloat(row.dataset.costoReal!), newMarkup));
         applyMargenStyle(el, margen);
@@ -227,7 +227,7 @@ import Layout from '../layouts/Layout.astro';
         const newMarkup = margenToMarkup(margen);
         const itemRows = document.querySelectorAll<HTMLElement>(`.item-row[data-grupo="${cat}"]`);
         const ids = Array.from(itemRows).map(r => r.dataset.id!);
-        await db.from('precios_venta').update({ markup: newMarkup }).in('id', ids);
+        await dbWrite(() => db.from('precios_venta').update({ markup: newMarkup }).in('id', ids).select());
         itemRows.forEach(row => {
           row.querySelector('.precio-efectivo')!.textContent = fmt(calcPrecioEfectivo(parseFloat(row.dataset.costoReal!), newMarkup));
           const inp = row.querySelector('.markup-input') as HTMLInputElement;
@@ -241,7 +241,7 @@ import Layout from '../layouts/Layout.astro';
     document.querySelectorAll('.btn-del-precio').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         const id = (e.target as HTMLElement).dataset.id!;
-        await db.from('precios_venta').delete().eq('id', id);
+        await dbWrite(() => db.from('precios_venta').delete().eq('id', id));
         renderTabla();
       });
     });
@@ -287,7 +287,7 @@ import Layout from '../layouts/Layout.astro';
     const lista = (recetas ?? []).map((r: any, i: number) => `${i + 1}. ${r.nombre}`).join('\n');
     const idx = parseInt(prompt(`¿A qué receta corresponde? (0 para ninguna)\n${lista}`) ?? '0') - 1;
     const receta_id = idx >= 0 ? (recetas ?? [])[idx]?.id ?? null : null;
-    await db.from('precios_venta').insert([{ nombre: nombre.trim(), subcategoria, receta_id, markup: 1.6 }]).select();
+    await dbWrite(() => db.from('precios_venta').insert([{ nombre: nombre.trim(), subcategoria, receta_id, markup: 1.6 }]).select());
     renderTabla();
   });
 
