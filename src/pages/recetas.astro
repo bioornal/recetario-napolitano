@@ -9,13 +9,15 @@ import Layout from '../layouts/Layout.astro';
   </header>
 
   <!-- Lista de recetas -->
-  <div class="flex items-center justify-between mb-4">
-    <select id="select-receta" class="bg-dark-surface border border-dark-border text-text-main py-2 px-3 rounded-xl text-sm focus:ring-2 focus:ring-accent-amber/50 outline-none">
-      <option value="">Cargando recetas...</option>
-    </select>
-    <div class="flex gap-2">
-      <button id="btn-nueva-receta" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-2 rounded-xl transition-all">+ Nueva receta</button>
-      <button id="btn-eliminar-receta" class="bg-red-900/50 hover:bg-red-800 text-red-400 text-xs font-semibold px-3 py-2 rounded-xl transition-all hidden">Eliminar receta</button>
+  <div class="flex flex-col gap-2 mb-4">
+    <input id="buscador-recetas" type="search" placeholder="Buscar receta..." autocomplete="off"
+      class="w-full bg-dark-surface border border-dark-border text-text-main py-2 px-3 rounded-xl text-sm placeholder-text-muted/50 focus:ring-2 focus:ring-accent-amber/50 outline-none">
+    <div class="flex items-center gap-2">
+      <select id="select-receta" class="flex-1 bg-dark-surface border border-dark-border text-text-main py-2 px-3 rounded-xl text-sm focus:ring-2 focus:ring-accent-amber/50 outline-none">
+        <option value="">Cargando recetas...</option>
+      </select>
+      <button id="btn-nueva-receta" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-2 rounded-xl transition-all">+ Nueva</button>
+      <button id="btn-eliminar-receta" class="bg-red-900/50 hover:bg-red-800 text-red-400 text-xs font-semibold px-3 py-2 rounded-xl transition-all hidden">Eliminar</button>
     </div>
   </div>
 
@@ -111,6 +113,7 @@ import Layout from '../layouts/Layout.astro';
   let ingredientesGlobales: any[] = [];
   let recetaActual: any = null;
   let ingredientesReceta: any[] = [];
+  let todasLasRecetas: any[] = [];
 
   async function init() {
     ingredientesGlobales = (await db.from('ingredientes').select('*').order('nombre', { ascending: true })).data ?? [];
@@ -119,12 +122,30 @@ import Layout from '../layouts/Layout.astro';
 
   async function cargarSelectRecetas() {
     const { data } = await db.from('recetas').select('id, nombre').order('nombre', { ascending: true });
+    todasLasRecetas = data ?? [];
+    renderSelectRecetas(todasLasRecetas);
+  }
+
+  function renderSelectRecetas(recetas: any[]) {
     const sel = document.getElementById('select-receta') as HTMLSelectElement;
+    const valorActual = sel.value;
     sel.innerHTML = '<option value="">— Seleccioná una receta —</option>';
-    (data ?? []).forEach((r: any) => {
-      sel.innerHTML += `<option value="${r.id}">${r.nombre}</option>`;
+    recetas.forEach((r: any) => {
+      sel.innerHTML += `<option value="${r.id}"${r.id === valorActual ? ' selected' : ''}>${r.nombre}</option>`;
     });
   }
+
+  document.getElementById('buscador-recetas')!.addEventListener('input', (e) => {
+    const q = (e.target as HTMLInputElement).value.toLowerCase().trim();
+    const filtradas = q ? todasLasRecetas.filter(r => r.nombre.toLowerCase().includes(q)) : todasLasRecetas;
+    renderSelectRecetas(filtradas);
+    // Si solo queda una, seleccionarla automáticamente
+    if (filtradas.length === 1) {
+      const sel = document.getElementById('select-receta') as HTMLSelectElement;
+      sel.value = filtradas[0].id;
+      sel.dispatchEvent(new Event('change'));
+    }
+  });
 
   document.getElementById('select-receta')!.addEventListener('change', async (e) => {
     const id = (e.target as HTMLSelectElement).value;

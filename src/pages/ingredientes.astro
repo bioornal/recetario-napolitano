@@ -16,6 +16,10 @@ import Layout from '../layouts/Layout.astro';
       </div>
       <button id="btn-add-ingrediente-global" class="bg-emerald-600/20 text-emerald-400 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-emerald-600/40 transition-all">+ Nuevo ingrediente</button>
     </div>
+    <div class="px-4 py-2 border-b border-dark-border/30">
+      <input id="buscador-ingredientes" type="search" placeholder="Buscar ingrediente..." autocomplete="off"
+        class="w-full bg-dark-bg border border-dark-border rounded-xl px-3 py-2 text-sm text-text-main placeholder-text-muted/50 focus:ring-2 focus:ring-accent-amber/50 outline-none">
+    </div>
     <div class="overflow-x-auto">
       <table class="w-full text-sm">
         <thead>
@@ -48,12 +52,23 @@ import Layout from '../layouts/Layout.astro';
     await renderTablaIngredientesGlobales();
   }
 
+  let filtroIngredientes = '';
+
+  document.getElementById('buscador-ingredientes')!.addEventListener('input', (e) => {
+    filtroIngredientes = (e.target as HTMLInputElement).value.toLowerCase().trim();
+    renderTablaIngredientesGlobales();
+  });
+
   async function renderTablaIngredientesGlobales() {
     const tbody = document.getElementById('tabla-ingredientes-precios')!;
 
+    const lista = filtroIngredientes
+      ? ingredientesGlobales.filter((i: any) => i.nombre.toLowerCase().includes(filtroIngredientes))
+      : ingredientesGlobales;
+
     const porTipo = new Map<string, any[]>();
     for (const t of TIPOS) porTipo.set(t, []);
-    for (const ing of ingredientesGlobales) {
+    for (const ing of lista) {
       const t = TIPOS.includes(ing.tipo) ? ing.tipo : 'Varios';
       porTipo.get(t)!.push(ing);
     }

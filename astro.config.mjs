@@ -12,8 +12,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       injectRegister: 'script-defer',
       manifest: {
-        name: 'El Fogon — Dashboard Pizzería',
-        short_name: 'El Fogon',
+        name: 'Gestor Impasto',
+        short_name: 'Gestor Impasto',
         description: 'Gestión profesional de pizzería napolitana',
         theme_color: '#1a1410',
         background_color: '#1a1410',
