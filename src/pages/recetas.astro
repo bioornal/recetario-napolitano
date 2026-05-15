@@ -358,8 +358,7 @@ import Layout from '../layouts/Layout.astro';
 
     try {
       if (recetaActual) {
-        const { error: errUpd } = await db.from('recetas').update({ nombre, precio_prepizza, precio_salsa, rend_tipo, rend_valor }).eq('id', recetaActual.id).select();
-        if (errUpd) throw errUpd;
+        await db.from('recetas').update({ nombre, precio_prepizza, precio_salsa, rend_tipo, rend_valor }).eq('id', recetaActual.id);
         const snapshot = ingredientesReceta.map((i: any) => ({
           receta_id: recetaActual.id, ingrediente_id: i.ingrediente_id,
           cantidad_kg: i.cantidad_kg, merma_factor: i.merma_factor ?? 1,
