@@ -94,7 +94,7 @@ import Layout from '../layouts/Layout.astro';
         const ing = ingredientesGlobales.find(i => i.id === el.dataset.id);
         if (ing) ing[field] = val;
         
-        await db.from('ingredientes').update({ [field]: val, updated_at: new Date().toISOString() }).eq('id', el.dataset.id!);
+        await db.from('ingredientes').update({ [field]: val }).eq('id', el.dataset.id!).select();
       });
     });
 

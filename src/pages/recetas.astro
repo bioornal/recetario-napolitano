@@ -337,33 +337,33 @@ import Layout from '../layouts/Layout.astro';
 
     try {
       if (recetaActual) {
-        await db.from('recetas').update({ nombre, precio_prepizza, precio_salsa, rend_tipo, rend_valor }).eq('id', recetaActual.id);
+        const { error: errUpd } = await db.from('recetas').update({ nombre, precio_prepizza, precio_salsa, rend_tipo, rend_valor }).eq('id', recetaActual.id).select();
+        if (errUpd) throw errUpd;
         const snapshot = ingredientesReceta.map((i: any) => ({
           receta_id: recetaActual.id, ingrediente_id: i.ingrediente_id,
           cantidad_kg: i.cantidad_kg, merma_factor: i.merma_factor ?? 1,
         }));
         await db.from('receta_ingredientes').delete().eq('receta_id', recetaActual.id);
         if (snapshot.length > 0) {
-          const { error } = await db.from('receta_ingredientes').insert(snapshot);
-          if (error) {
-            await db.from('receta_ingredientes').insert(snapshot.map(r => ({ ...r })));
-            throw error;
-          }
+          const { error } = await db.from('receta_ingredientes').insert(snapshot).select();
+          if (error) throw error;
         }
       } else {
-        const { data } = await db.from('recetas').insert([{ nombre, precio_prepizza, precio_salsa, rend_tipo, rend_valor }]).select('id').single();
+        const { data, error: errIns } = await db.from('recetas').insert([{ nombre, precio_prepizza, precio_salsa, rend_tipo, rend_valor }]).select('id').single();
+        if (errIns) throw errIns;
         recetaActual = data;
         if (ingredientesReceta.length > 0) {
-          await db.from('receta_ingredientes').insert(ingredientesReceta.map((i: any) => ({
+          const { error: errIngIns } = await db.from('receta_ingredientes').insert(ingredientesReceta.map((i: any) => ({
             receta_id: recetaActual.id, ingrediente_id: i.ingrediente_id,
             cantidad_kg: i.cantidad_kg, merma_factor: i.merma_factor ?? 1,
-          })));
+          }))).select();
+          if (errIngIns) throw errIngIns;
         }
       }
       await cargarSelectRecetas();
       alert('Receta guardada ✓');
-    } catch {
-      alert('Error al guardar. Recargá la página para verificar el estado.');
+    } catch (err: any) {
+      alert('Error al guardar: ' + (err?.message ?? String(err)));
     }
   });
 
