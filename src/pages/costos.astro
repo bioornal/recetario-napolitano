@@ -87,16 +87,67 @@ import Layout from '../layouts/Layout.astro';
       <button id="btn-guardar-pizzas" class="bg-accent-amber text-dark-bg text-xs font-bold px-3 py-1.5 rounded-xl hover:bg-accent-gold transition-all">Guardar</button>
     </div>
   </div>
+
+  <!-- Calculadora de Prepizza y Salsa -->
+  <div class="glass-panel rounded-2xl p-5 mb-6 mt-6">
+    <h2 class="text-xs uppercase tracking-wider text-accent-amber font-bold mb-1">Costo Base: Prepizza y Salsa</h2>
+    <p class="text-[0.65rem] text-text-muted mb-4">Calculá el costo del bollo y la salsa con ingredientes reales, como una receta. Luego propagalo a las categorías que elijas.</p>
+
+    <div class="grid lg:grid-cols-2 gap-4">
+      <!-- Prepizza -->
+      <div class="bg-dark-surface/40 rounded-xl p-4 border border-dark-border/30">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-bold text-text-main uppercase tracking-wider">Prepizza (Bollo)</h3>
+          <span class="text-lg font-bold text-emerald-400" id="costo-prepizza-calc">$0</span>
+        </div>
+        <div id="ings-prepizza" class="space-y-1 mb-3 text-xs"></div>
+        <button id="btn-add-ing-prepizza" class="text-xs bg-accent-amber/20 text-accent-amber px-3 py-1.5 rounded-lg hover:bg-accent-amber/30 transition-all">+ Agregar ingrediente</button>
+      </div>
+
+      <!-- Salsa -->
+      <div class="bg-dark-surface/40 rounded-xl p-4 border border-dark-border/30">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-bold text-text-main uppercase tracking-wider">Salsa</h3>
+          <span class="text-lg font-bold text-emerald-400" id="costo-salsa-calc">$0</span>
+        </div>
+        <div id="ings-salsa" class="space-y-1 mb-3 text-xs"></div>
+        <button id="btn-add-ing-salsa" class="text-xs bg-accent-amber/20 text-accent-amber px-3 py-1.5 rounded-lg hover:bg-accent-amber/30 transition-all">+ Agregar ingrediente</button>
+      </div>
+    </div>
+
+    <button id="btn-guardar-costos-base" class="mt-4 w-full bg-accent-amber text-dark-bg font-bold py-3 rounded-xl hover:bg-accent-gold transition-all">Guardar costos base</button>
+  </div>
+
+  <!-- Propagar a Recetas -->
+  <div class="glass-panel rounded-2xl p-5 mb-6">
+    <h2 class="text-xs uppercase tracking-wider text-orange-400 font-bold mb-1">Propagar costos base a recetas</h2>
+    <p class="text-[0.65rem] text-text-muted mb-3">Actualiza prepizza y salsa en TODAS las recetas de las categorías que marques.</p>
+    <div class="grid grid-cols-3 gap-2 mb-4 text-xs">
+      <div><span class="text-text-muted">Prepizza:</span> <span class="font-bold text-emerald-400" id="ctx-prepizza">—</span></div>
+      <div><span class="text-text-muted">Salsa:</span> <span class="font-bold text-emerald-400" id="ctx-salsa">—</span></div>
+    </div>
+    <div id="check-categorias" class="flex flex-wrap gap-3 mb-4"></div>
+    <button id="btn-propagar" class="w-full bg-orange-600/20 border border-orange-500/50 text-orange-400 font-bold py-3 rounded-xl hover:bg-orange-600/40 transition-all disabled:opacity-30 disabled:cursor-not-allowed" disabled>Propagar a recetas seleccionadas</button>
+    <p id="propagar-msg" class="text-xs text-emerald-400 mt-2 hidden"></p>
+  </div>
 </Layout>
 
 <script>
   import { insforge } from '../lib/insforge';
   import { calcCostoOperativoPorPizza } from '../utils/pricing';
-  import { fmt, showDbError, escapeHtml, dbWrite } from '../utils/fmt';
+  import { fmt, TIPOS, showDbError, escapeHtml, dbWrite } from '../utils/fmt';
 
   const db = insforge.database;
   let pizzasMes = 800;
   let configId: string | null = null;
+
+  // ─── Prepizza & Salsa calculator state ───
+  let ingsPrepizza: any[] = [];
+  let ingsSalsa: any[] = [];
+  let ingredientesGlobalesCostos: any[] = [];
+  let precioPrepizzaDefault = 485;
+  let precioSalsaDefault = 236;
+  let recetasPorCategoria: Map<string, string[]> = new Map();
 
   function recalcular() {
     const tf = parseFloat((document.getElementById('total-fijos') as HTMLElement).dataset.raw ?? '0');
@@ -225,12 +276,181 @@ import Layout from '../layouts/Layout.astro';
     recalcular();
   });
 
+  // ─── Prepizza & Salsa Calculator ───
+  function calcCostoIngs(ings: any[]) {
+    return Math.round(ings.reduce((acc, i) => {
+      const g = i.ingredientes ?? ingredientesGlobalesCostos.find(x => x.id === i.ingrediente_id);
+      return acc + (Number(g?.precio_kg ?? 0)) * (Number(i.cantidad_kg ?? 0)) * (Number(g?.multiplo_rendimiento ?? 1));
+    }, 0));
+  }
+
+  function renderIngs(lista: any[], containerId: string, costoId: string) {
+    const container = document.getElementById(containerId)!;
+    if (lista.length === 0) {
+      container.innerHTML = '<span class="text-text-muted italic">Sin ingredientes</span>';
+    } else {
+      container.innerHTML = lista.map((ing, idx) => {
+        const g = ing.ingredientes ?? ingredientesGlobalesCostos.find(x => x.id === ing.ingrediente_id);
+        const cost = Math.round(Number(g?.precio_kg ?? 0) * Number(ing.cantidad_kg ?? 0) * Number(g?.multiplo_rendimiento ?? 1));
+        return `<div class="flex items-center justify-between py-1 border-b border-dark-border/20">
+          <span class="text-text-main">${escapeHtml(g?.nombre ?? '?')}</span>
+          <span class="text-text-muted mr-2">${Number(ing.cantidad_kg ?? 0).toFixed(3)} kg</span>
+          <span class="text-emerald-400 font-mono text-xs mr-2">${fmt(cost)}</span>
+          <button data-idx="${idx}" class="text-red-400 hover:text-red-300 text-xs btn-del-ing-${containerId}">✕</button>
+        </div>`;
+      }).join('');
+    }
+    document.getElementById(costoId)!.textContent = fmt(calcCostoIngs(lista));
+
+    container.querySelectorAll(`.btn-del-ing-${containerId}`).forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt((btn as HTMLElement).dataset.idx!);
+        lista.splice(idx, 1);
+        renderIngs(lista, containerId, costoId);
+        updatePropagarState();
+      });
+    });
+  }
+
+  function renderIngsPrepizza() { renderIngs(ingsPrepizza, 'ings-prepizza', 'costo-prepizza-calc'); }
+  function renderIngsSalsa() { renderIngs(ingsSalsa, 'ings-salsa', 'costo-salsa-calc'); }
+
+  function mostrarPromptIngrediente(titulo: string): any | null {
+    const grupos = TIPOS.map(tipo => {
+      const ings = ingredientesGlobalesCostos.filter((i: any) => (i.tipo ?? 'Varios') === tipo);
+      if (ings.length === 0) return '';
+      return `${tipo}:\n` + ings.map((i: any) => `  ${i.nombre}  ($${i.precio_kg}/kg, MR ${i.multiplo_rendimiento})`).join('\n');
+    }).filter(Boolean).join('\n\n');
+    const nombre = prompt(`${titulo}:\n\n${grupos}\n\nEscribí el nombre exacto del ingrediente:`);
+    if (!nombre?.trim()) return null;
+    return ingredientesGlobalesCostos.find((i: any) => i.nombre.toLowerCase() === nombre.toLowerCase().trim()) ?? null;
+  }
+
+  document.getElementById('btn-add-ing-prepizza')!.addEventListener('click', () => {
+    const ing = mostrarPromptIngrediente('Agregar ingrediente a la PREPIZZA');
+    if (!ing) return;
+    const cant = parseFloat(prompt(`Cantidad en kg para "${ing.nombre}":`) ?? '0');
+    if (!cant || cant <= 0) return;
+    ingsPrepizza.push({ ingrediente_id: ing.id, cantidad_kg: cant, ingredientes: ing });
+    renderIngsPrepizza();
+    updatePropagarState();
+  });
+
+  document.getElementById('btn-add-ing-salsa')!.addEventListener('click', () => {
+    const ing = mostrarPromptIngrediente('Agregar ingrediente a la SALSA');
+    if (!ing) return;
+    const cant = parseFloat(prompt(`Cantidad en kg para "${ing.nombre}":`) ?? '0');
+    if (!cant || cant <= 0) return;
+    ingsSalsa.push({ ingrediente_id: ing.id, cantidad_kg: cant, ingredientes: ing });
+    renderIngsSalsa();
+    updatePropagarState();
+  });
+
+  document.getElementById('btn-guardar-costos-base')!.addEventListener('click', async () => {
+    precioPrepizzaDefault = calcCostoIngs(ingsPrepizza);
+    precioSalsaDefault = calcCostoIngs(ingsSalsa);
+    if (configId) {
+      await dbWrite(() => db.from('config_negocio').update({
+        precio_prepizza_default: precioPrepizzaDefault,
+        precio_salsa_default: precioSalsaDefault,
+      }).eq('id', configId).select());
+    }
+    document.getElementById('ctx-prepizza')!.textContent = fmt(precioPrepizzaDefault);
+    document.getElementById('ctx-salsa')!.textContent = fmt(precioSalsaDefault);
+    updatePropagarState();
+    alert('Costos base guardados.');
+  });
+
+  // ─── Categorías & Propagación ───
+  const CATEGORIAS_COSTOS = ['Pizzas', 'Calzones', 'Empanadas', 'Hamburguesas', 'Lomos', 'Otros'] as const;
+
+  async function cargarCategoriasYRecetas() {
+    const [{ data: precios }, { data: recetas }] = await Promise.all([
+      db.from('precios_venta').select('receta_id, subcategoria'),
+      db.from('recetas').select('id, nombre'),
+    ]);
+    recetasPorCategoria = new Map();
+    const recetaNombres = new Map((recetas ?? []).map((r: any) => [r.id, r.nombre]));
+
+    for (const cat of CATEGORIAS_COSTOS) {
+      const ids = new Set<string>();
+      for (const p of (precios ?? [])) {
+        if (p.subcategoria === cat && p.receta_id) ids.add(p.receta_id);
+      }
+      recetasPorCategoria.set(cat, [...ids]);
+    }
+
+    const container = document.getElementById('check-categorias')!;
+    container.innerHTML = CATEGORIAS_COSTOS.map(cat => {
+      const ids = recetasPorCategoria.get(cat) ?? [];
+      const nombres = ids.map(id => recetaNombres.get(id) ?? id.slice(0, 6)).join(', ');
+      return `<label class="flex items-center gap-1.5 cursor-pointer text-xs text-text-main">
+        <input type="checkbox" value="${cat}" class="accent-orange-500 w-3.5 h-3.5 chk-cat">
+        <span>${cat}</span>
+        <span class="text-text-muted text-[0.6rem]">(${ids.length}: ${nombres || '—'})</span>
+      </label>`;
+    }).join('');
+
+    container.querySelectorAll('.chk-cat').forEach(chk => {
+      chk.addEventListener('change', updatePropagarState);
+    });
+    updatePropagarState();
+  }
+
+  function updatePropagarState() {
+    const btn = document.getElementById('btn-propagar') as HTMLButtonElement;
+    const checked = document.querySelectorAll<HTMLInputElement>('.chk-cat:checked');
+    btn.disabled = checked.length === 0;
+
+    document.getElementById('ctx-prepizza')!.textContent = fmt(precioPrepizzaDefault);
+    document.getElementById('ctx-salsa')!.textContent = fmt(precioSalsaDefault);
+  }
+
+  document.getElementById('btn-propagar')!.addEventListener('click', async () => {
+    const checked = Array.from(document.querySelectorAll<HTMLInputElement>('.chk-cat:checked')).map(c => c.value);
+    if (checked.length === 0) return;
+
+    const todosIds = new Set<string>();
+    for (const cat of checked) {
+      for (const id of (recetasPorCategoria.get(cat) ?? [])) todosIds.add(id);
+    }
+    if (todosIds.size === 0) { alert('No hay recetas vinculadas a esas categorías.'); return; }
+
+    const idsArr = [...todosIds];
+    if (!confirm(`¿Actualizar precio_prepizza=${fmt(precioPrepizzaDefault)} y precio_salsa=${fmt(precioSalsaDefault)} en ${idsArr.length} receta(s)?`)) return;
+
+    // Batch update in chunks (InsForge .in() has limits)
+    const CHUNK = 50;
+    let ok = 0;
+    for (let i = 0; i < idsArr.length; i += CHUNK) {
+      const chunk = idsArr.slice(i, i + CHUNK);
+      const { error } = await dbWrite(() =>
+        db.from('recetas').update({ precio_prepizza: precioPrepizzaDefault, precio_salsa: precioSalsaDefault }).in('id', chunk).select()
+      );
+      if (error) { alert(`Error al propagar: ${error?.message ?? error}`); return; }
+      ok += chunk.length;
+    }
+
+    const msg = document.getElementById('propagar-msg')!;
+    msg.classList.remove('hidden');
+    msg.textContent = `✓ Actualizadas ${ok} receta(s) en: ${checked.join(', ')}`;
+    setTimeout(() => msg.classList.add('hidden'), 4000);
+  });
+
   async function init() {
-    const { data: config } = await db.from('config_negocio').select('id, pizzas_objetivo_mes').limit(1);
+    const { data: config } = await db.from('config_negocio').select('id, pizzas_objetivo_mes, precio_prepizza_default, precio_salsa_default').limit(1);
     pizzasMes = config?.[0]?.pizzas_objetivo_mes ?? 800;
     configId = config?.[0]?.id ?? null;
+    precioPrepizzaDefault = config?.[0]?.precio_prepizza_default ?? 485;
+    precioSalsaDefault = config?.[0]?.precio_salsa_default ?? 236;
     (document.getElementById('inp-pizzas-mes') as HTMLInputElement).value = String(pizzasMes);
-    await Promise.all([renderFijos(), renderVariables()]);
+    document.getElementById('ctx-prepizza')!.textContent = fmt(precioPrepizzaDefault);
+    document.getElementById('ctx-salsa')!.textContent = fmt(precioSalsaDefault);
+
+    const { data: ings } = await db.from('ingredientes').select('*').order('nombre', { ascending: true });
+    ingredientesGlobalesCostos = ings ?? [];
+
+    await Promise.all([renderFijos(), renderVariables(), cargarCategoriasYRecetas()]);
   }
 
   init().catch(showDbError);

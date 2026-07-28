@@ -114,9 +114,14 @@ import Layout from '../layouts/Layout.astro';
   let recetaActual: any = null;
   let ingredientesReceta: any[] = [];
   let todasLasRecetas: any[] = [];
+  let defaultPrepizza = 485;
+  let defaultSalsa = 236;
 
   async function init() {
     ingredientesGlobales = (await db.from('ingredientes').select('*').order('nombre', { ascending: true })).data ?? [];
+    const { data: cfg } = await db.from('config_negocio').select('precio_prepizza_default, precio_salsa_default').limit(1);
+    defaultPrepizza = cfg?.[0]?.precio_prepizza_default ?? 485;
+    defaultSalsa = cfg?.[0]?.precio_salsa_default ?? 236;
     await cargarSelectRecetas();
   }
 
@@ -337,8 +342,8 @@ import Layout from '../layouts/Layout.astro';
     recetaActual = null;
     ingredientesReceta = [];
     (document.getElementById('inp-nombre') as HTMLInputElement).value = '';
-    (document.getElementById('inp-prepizza') as HTMLInputElement).value = '485';
-    (document.getElementById('inp-salsa') as HTMLInputElement).value = '236';
+    (document.getElementById('inp-prepizza') as HTMLInputElement).value = String(defaultPrepizza);
+    (document.getElementById('inp-salsa') as HTMLInputElement).value = String(defaultSalsa);
     (document.getElementById('rend-tipo-calc') as HTMLSelectElement).value = 'directo';
     (document.getElementById('inp-unidades-directo') as HTMLInputElement).value = '1';
     (document.getElementById('inp-gramos-unidad') as HTMLInputElement).value = '65';
