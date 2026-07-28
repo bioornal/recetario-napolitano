@@ -47,7 +47,7 @@ import Layout from '../layouts/Layout.astro';
     <div class="flex items-center justify-between p-4 border-b border-dark-border/50">
       <h2 class="text-xs uppercase tracking-wider text-accent-gold font-bold">Ventas del mes</h2>
       <div class="flex items-center gap-2">
-        <button id="btn-cargar-carrofogon" class="bg-blue-600/20 text-blue-400 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-blue-600/40 transition-all">Cargar desde CarroFogon</button>
+        <button id="btn-cargar-carrofogon" class="text-text-muted text-xs hover:text-text-main transition-all">Recargar datos</button>
         <button id="btn-mostrar-todos" class="text-text-muted text-xs hover:text-text-main transition-all">Mostrar todos</button>
         <button id="btn-guardar-ventas" class="bg-emerald-600/20 text-emerald-400 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-emerald-600/40 transition-all">Guardar</button>
       </div>
@@ -171,9 +171,10 @@ import Layout from '../layouts/Layout.astro';
   let precioPrepizzaGlobal = 485;
   let precioSalsaGlobal = 236;
   let productosVenta: any[] = [];
-  let unidadesPorProducto: Map<string, number> = new Map();
   let gastosData: any[] = [];
   let _mostrarTodos = false;
+  let _totalPedidos = 0;
+  let _totalMatcheados = 0;
 
   const CATEGORIAS = ['Pizzas', 'Calzones', 'Empanadas', 'Hamburguesas', 'Lomos', 'Otros'] as const;
 
@@ -197,6 +198,7 @@ import Layout from '../layouts/Layout.astro';
       { data: recetas },
       { data: recetaIngs },
       { data: ingredientes },
+      { data: pedidos },
       { data: ventasMes },
       { data: fijos },
       { data: variables },
@@ -207,12 +209,29 @@ import Layout from '../layouts/Layout.astro';
       db.from('recetas').select('id, nombre, precio_prepizza, precio_salsa'),
       db.from('receta_ingredientes').select('*'),
       db.from('ingredientes').select('id, precio_kg, multiplo_rendimiento'),
+      loadOrEmpty('pedidos', () => db.from('pedidos').select('productos').gte('fecha', `${mesActual}-01`).lt('fecha', getNextMonth(mesActual))),
       loadOrEmpty('ventas_mes', () => db.from('ventas_mes').select('*').eq('mes', mesActual)),
       db.from('costos_fijos').select('monto').eq('activo', true),
       db.from('costos_variables').select('monto_referencia'),
       db.from('config_negocio').select('pizzas_objetivo_mes, precio_prepizza_default, precio_salsa_default').limit(1),
       loadOrEmpty('gastos', () => db.from('gastos').select('*').gte('fecha', `${mesActual}-01`).lt('fecha', getNextMonth(mesActual)).order('fecha', { ascending: false })),
     ]);
+
+    // ─── Cargar unidades desde CarroFogon (pedidos) ───
+    const unidadesFogon = new Map<string, number>(); // precio_venta_id → cantidad
+    for (const ped of (pedidos ?? [])) {
+      const prods = typeof ped.productos === 'string' ? JSON.parse(ped.productos) : (ped.productos ?? []);
+      for (const p of prods) {
+        const key = normalizarNombre(p.nombre ?? '');
+        if (key) unidadesFogon.set(key, (unidadesFogon.get(key) ?? 0) + (p.cantidad ?? 1));
+      }
+    }
+
+    // ─── Unidades manuales guardadas (ventas_mes tiene prioridad) ───
+    const unidadesManual = new Map<string, number>(); // precio_venta_id → unidades
+    for (const v of (ventasMes ?? [])) {
+      unidadesManual.set(v.precio_venta_id, v.unidades);
+    }
 
     // Costo operativo total
     totalOp = [
@@ -234,14 +253,14 @@ import Layout from '../layouts/Layout.astro';
       riByReceta.get(ri.receta_id)!.push(ri);
     }
 
-    // Unidades vendidas del mes
-    unidadesPorProducto = new Map();
-    for (const v of (ventasMes ?? [])) {
-      unidadesPorProducto.set(v.precio_venta_id, v.unidades);
+    // ─── Armar productos con costos y asignar unidades ───
+    // Prioridad: ventas_mes (manual) > pedidos carroFogon (automático)
+    productosVenta = [];
+    const nombreNormToPid = new Map<string, string>(); // nombre_normalizado → precio_venta_id
+    for (const item of (precios ?? [])) {
+      nombreNormToPid.set(normalizarNombre(item.nombre), item.id);
     }
 
-    // Armar productos con costos
-    productosVenta = [];
     for (const item of (precios ?? [])) {
       const receta = item.receta_id ? recetasMap.get(item.receta_id) : null;
       let costoUnit = 0;
@@ -260,7 +279,13 @@ import Layout from '../layouts/Layout.astro';
       const costoOpUnit = cat === 'Empanadas' ? costoOpPorPizza / 12 : costoOpPorPizza;
       const costoReal = calcCostoRealTotal(costoUnit, costoOpUnit);
       const precioVenta = calcPrecioEfectivo(costoReal, item.markup);
-      const unidades = unidadesPorProducto.get(item.id) ?? 0;
+
+      // Unidades: manual (ventas_mes) > automático (pedidos carroFogon) > 0
+      let unidades = unidadesManual.get(item.id);
+      if (unidades === undefined) {
+        const fogonCant = unidadesFogon.get(normalizarNombre(item.nombre));
+        unidades = fogonCant ?? 0;
+      }
 
       productosVenta.push({
         id: item.id,
@@ -278,6 +303,20 @@ import Layout from '../layouts/Layout.astro';
 
     // Gastos
     gastosData = gastosRows ?? [];
+
+    // ─── Status de carga automática ───
+    _totalPedidos = (pedidos ?? []).length;
+    _totalMatcheados = productosVenta.filter(p => p.unidades > 0 && unidadesManual.get(p.id) === undefined).length;
+    const statusEl = document.getElementById('carrofogon-status')!;
+    if (_totalPedidos > 0) {
+      const conManual = (ventasMes ?? []).length > 0;
+      statusEl.classList.remove('hidden');
+      let msg = `<span class="text-blue-400">📦 ${_totalPedidos} pedidos en CarroFogon · ${_totalMatcheados} productos sincronizados</span>`;
+      if (conManual) msg += `<span class="text-text-muted ml-2">| Algunas unidades tienen ajuste manual</span>`;
+      statusEl.innerHTML = msg;
+    } else {
+      statusEl.classList.add('hidden');
+    }
 
     renderVentas();
     renderGastos();
@@ -516,81 +555,9 @@ import Layout from '../layouts/Layout.astro';
 
   document.getElementById('btn-cargar-carrofogon')!.addEventListener('click', async () => {
     const btn = document.getElementById('btn-cargar-carrofogon') as HTMLButtonElement;
-    btn.disabled = true;
     btn.textContent = 'Cargando...';
-
-    const statusEl = document.getElementById('carrofogon-status')!;
-
-    try {
-      const { data: pedidos } = await db.from('pedidos')
-        .select('productos')
-        .gte('fecha', `${mesActual}-01`)
-        .lt('fecha', getNextMonth(mesActual));
-
-      if (!pedidos?.length) {
-        statusEl.classList.remove('hidden');
-        statusEl.innerHTML = '<span class="text-text-muted">No se encontraron pedidos en CarroFogon para este mes.</span>';
-        btn.disabled = false;
-        btn.textContent = 'Cargar desde CarroFogon';
-        return;
-      }
-
-      const conteoFogon = new Map<string, number>(); // nombre normalizado → cantidad
-      for (const ped of pedidos) {
-        const prods = typeof ped.productos === 'string' ? JSON.parse(ped.productos) : (ped.productos ?? []);
-        for (const p of prods) {
-          const key = normalizarNombre(p.nombre ?? '');
-          if (key) conteoFogon.set(key, (conteoFogon.get(key) ?? 0) + (p.cantidad ?? 1));
-        }
-      }
-
-      // Match contra precios_venta
-      const nombreNormToPid = new Map<string, { id: string; nombre: string }>();
-      for (const p of productosVenta) {
-        nombreNormToPid.set(normalizarNombre(p.nombre), { id: p.id, nombre: p.nombre });
-      }
-
-      let matched = 0;
-      let unmatched: string[] = [];
-
-      for (const [fogonName, qty] of conteoFogon) {
-        const match = nombreNormToPid.get(fogonName);
-        if (match) {
-          unidadesPorProducto.set(match.id, qty);
-          const p = productosVenta.find(x => x.id === match.id);
-          if (p) p.unidades = qty;
-          matched++;
-        } else {
-          unmatched.push(fogonName);
-        }
-      }
-
-      // Productos no matcheados se ponen en 0
-      for (const p of productosVenta) {
-        if (!unidadesPorProducto.has(p.id)) {
-          unidadesPorProducto.set(p.id, 0);
-          p.unidades = 0;
-        }
-      }
-
-      renderVentas();
-      actualizarResumen();
-
-      statusEl.classList.remove('hidden');
-      let msg = `<span class="text-blue-400 font-bold">✓ ${matched} productos sincronizados</span>`;
-      msg += `<span class="text-text-muted ml-2">de ${pedidos.length} pedidos en CarroFogon.</span>`;
-      if (unmatched.length > 0) {
-        msg += `<div class="mt-1 text-amber-400">⚠ No vinculados (${unmatched.length}): ${unmatched.map(n => `"${n}"`).join(', ')}</div>`;
-        msg += `<div class="text-text-muted text-[0.6rem] mt-1">Revisá que los nombres en CarroFogon coincidan exactamente con los de Precios.</div>`;
-      }
-      statusEl.innerHTML = msg;
-    } catch (err: any) {
-      statusEl.classList.remove('hidden');
-      statusEl.innerHTML = `<span class="text-red-400">Error al cargar pedidos: ${err?.message ?? err}</span>`;
-    }
-
-    btn.disabled = false;
-    btn.textContent = 'Cargar desde CarroFogon';
+    await cargarTodo();
+    btn.textContent = 'Recargar datos';
   });
 
   // ─── Toggle mostrar todos ───
