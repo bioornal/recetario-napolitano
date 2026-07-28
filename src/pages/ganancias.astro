@@ -207,11 +207,11 @@ import Layout from '../layouts/Layout.astro';
       db.from('recetas').select('id, nombre, precio_prepizza, precio_salsa'),
       db.from('receta_ingredientes').select('*'),
       db.from('ingredientes').select('id, precio_kg, multiplo_rendimiento'),
-      db.from('ventas_mes').select('*').eq('mes', mesActual),
+      loadOrEmpty('ventas_mes', () => db.from('ventas_mes').select('*').eq('mes', mesActual)),
       db.from('costos_fijos').select('monto').eq('activo', true),
       db.from('costos_variables').select('monto_referencia'),
       db.from('config_negocio').select('pizzas_objetivo_mes, precio_prepizza_default, precio_salsa_default').limit(1),
-      db.from('gastos').select('*').gte('fecha', `${mesActual}-01`).lt('fecha', getNextMonth(mesActual)).order('fecha', { ascending: false }),
+      loadOrEmpty('gastos', () => db.from('gastos').select('*').gte('fecha', `${mesActual}-01`).lt('fecha', getNextMonth(mesActual)).order('fecha', { ascending: false })),
     ]);
 
     // Costo operativo total
@@ -288,6 +288,15 @@ import Layout from '../layouts/Layout.astro';
     const [y, m] = ym.split('-').map(Number);
     if (m === 12) return `${y + 1}-01-01`;
     return `${y}-${String(m + 1).padStart(2, '0')}-01`;
+  }
+
+  async function loadOrEmpty(_label: string, fn: () => Promise<any>) {
+    try {
+      return await fn();
+    } catch (err) {
+      console.warn(`Tabla "${_label}" no disponible:`, err);
+      return { data: [] };
+    }
   }
 
   // ─── Render ventas ───
@@ -600,11 +609,19 @@ import Layout from '../layouts/Layout.astro';
     if (!monto || monto <= 0) return;
     const fecha = prompt('Fecha (YYYY-MM-DD, dejar vacío para hoy):') || new Date().toISOString().slice(0, 10);
 
-    await dbWrite(() => db.from('gastos').insert([{
-      concepto: concepto.trim(),
-      monto,
-      fecha,
-    }]).select());
+    try {
+      const res = await dbWrite(() => db.from('gastos').insert([{
+        concepto: concepto.trim(),
+        monto,
+        fecha,
+      }]).select());
+
+      if (res?.error) {
+        alert(`Error al guardar gasto: ${res.error?.message ?? JSON.stringify(res.error)}\n\nVerificá que la tabla "gastos" exista en la base de datos.`);
+      }
+    } catch (err: any) {
+      alert(`Error al guardar gasto: ${err?.message ?? err}\n\nAsegurate de haber creado la tabla "gastos" en InsForge (SQL Editor).`);
+    }
 
     await cargarTodo();
   });
