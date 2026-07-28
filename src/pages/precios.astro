@@ -55,6 +55,15 @@ import Layout from '../layouts/Layout.astro';
 
   <button id="btn-add-precio" class="glass-panel rounded-2xl px-4 py-3 text-sm text-text-muted hover:text-text-main hover:border-orange-500/50 transition-all w-full">+ Agregar producto a la lista</button>
 
+  <!-- Recetas sin precio -->
+  <div id="recetas-huerfanas" class="glass-panel rounded-2xl p-5 mt-6 hidden">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-xs uppercase tracking-wider text-red-400 font-bold">Recetas sin precio de venta</h2>
+      <button id="btn-sync-todas" class="text-xs bg-orange-500/20 text-orange-400 px-3 py-1.5 rounded-lg hover:bg-orange-500/40 transition-all font-medium">Sincronizar todas</button>
+    </div>
+    <p class="text-[0.65rem] text-text-muted mb-3">Estas recetas no están en la lista de precios. Agregalas individualmente o sincronizá todas juntas.</p>
+    <div id="lista-huerfanas" class="space-y-1 mb-3"></div>
+  </div>
 </Layout>
 
 <script>
@@ -64,6 +73,8 @@ import Layout from '../layouts/Layout.astro';
 
   const db = insforge.database;
   let costoOpPorPizza = 0;
+  let _syncInitialized = false;
+  let _huerfanasGuard: { id: string; nombre: string }[] = [];
 
   const CATEGORIAS = ['Pizzas', 'Calzones', 'Empanadas', 'Hamburguesas', 'Lomos', 'Otros'] as const;
 
@@ -98,7 +109,7 @@ import Layout from '../layouts/Layout.astro';
       { data: ingredientes },
     ] = await Promise.all([
       db.from('precios_venta').select('*').order('nombre', { ascending: true }),
-      db.from('recetas').select('id, precio_prepizza, precio_salsa'),
+       db.from('recetas').select('id, nombre, precio_prepizza, precio_salsa'),
       db.from('receta_ingredientes').select('*'),
       db.from('ingredientes').select('id, precio_kg, multiplo_rendimiento'),
     ]);
@@ -202,6 +213,63 @@ import Layout from '../layouts/Layout.astro';
     }
 
     document.getElementById('tbody-precios')!.innerHTML = html;
+
+    // ─── Recetas sin precio de venta ───
+    const idsConPrecio = new Set((precios ?? []).map((p: any) => p.receta_id).filter(Boolean));
+    const huerfanas = (recetas ?? []).filter((r: any) => !idsConPrecio.has(r.id));
+    _huerfanasGuard = huerfanas.map((r: any) => ({ id: r.id, nombre: r.nombre }));
+
+    const container = document.getElementById('recetas-huerfanas')!;
+    const lista = document.getElementById('lista-huerfanas')!;
+    if (huerfanas.length === 0) {
+      container.classList.add('hidden');
+    } else {
+      container.classList.remove('hidden');
+      lista.innerHTML = huerfanas.map((r: any) => {
+        const ings = (riByReceta.get(r.id) ?? []).map((ri: any) => {
+          const ing = ingMap.get(ri.ingrediente_id);
+          return { precio_kg: Number(ing?.precio_kg ?? 0), cantidad_kg: Number(ri.cantidad_kg), multiplo_rendimiento: Number(ing?.multiplo_rendimiento ?? 1) };
+        });
+        const costo = calcCostoReceta(ings, r.precio_prepizza, r.precio_salsa);
+        return `<div class="flex items-center justify-between py-2 border-b border-dark-border/20">
+          <div>
+            <span class="text-text-main text-sm font-medium">${escapeHtml(r.nombre)}</span>
+            <span class="text-emerald-400 text-xs ml-2 font-mono">${fmt(costo)}</span>
+          </div>
+          <button data-receta-id="${r.id}" data-receta-nombre="${escapeHtml(r.nombre)}" class="text-xs bg-accent-amber/20 text-accent-amber px-3 py-1.5 rounded-lg hover:bg-accent-amber/30 transition-all btn-agregar-huerfana">+ Agregar</button>
+        </div>`;
+      }).join('');
+
+      lista.querySelectorAll('.btn-agregar-huerfana').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const el = e.target as HTMLElement;
+          const rid = el.dataset.recetaId!;
+          const rnombre = el.dataset.recetaNombre!;
+          const catsStr = CATEGORIAS.map((c, i) => `${i + 1}. ${c}`).join('\n');
+          const catInput = prompt(`Categoría para "${rnombre}":\n${catsStr}`);
+          if (!catInput) return;
+          const catIdx = parseInt(catInput) - 1;
+          const sub = (catIdx >= 0 && catIdx < CATEGORIAS.length) ? CATEGORIAS[catIdx] : 'Otros';
+          await dbWrite(() => db.from('precios_venta').insert([{ nombre: rnombre, subcategoria: sub, receta_id: rid, markup: 1.6 }]).select());
+          renderTabla();
+        });
+      });
+    }
+
+    if (!_syncInitialized) {
+      _syncInitialized = true;
+      document.getElementById('btn-sync-todas')!.addEventListener('click', async () => {
+        if (_huerfanasGuard.length === 0) return;
+        const catsStr = CATEGORIAS.map((c, i) => `${i + 1}. ${c}`).join('\n');
+        const catInput = prompt(`Categoría para TODAS las recetas sin precio:\n${catsStr}`);
+        if (!catInput) return;
+        const catIdx = parseInt(catInput) - 1;
+        const sub = (catIdx >= 0 && catIdx < CATEGORIAS.length) ? CATEGORIAS[catIdx] : 'Otros';
+        const inserts = _huerfanasGuard.map((r) => ({ nombre: r.nombre, subcategoria: sub, receta_id: r.id, markup: 1.6 }));
+        await dbWrite(() => db.from('precios_venta').insert(inserts).select());
+        renderTabla();
+      });
+    }
 
     // Margen individual
     document.querySelectorAll('.markup-input').forEach(inp => {
