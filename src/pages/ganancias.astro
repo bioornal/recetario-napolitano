@@ -42,7 +42,10 @@ import Layout from '../layouts/Layout.astro';
   <div class="glass-panel rounded-2xl overflow-hidden mb-4">
     <div class="flex items-center justify-between p-4 border-b border-dark-border/50">
       <h2 class="text-xs uppercase tracking-wider text-accent-gold font-bold">Ventas del mes</h2>
-      <button id="btn-guardar-ventas" class="bg-emerald-600/20 text-emerald-400 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-emerald-600/40 transition-all">Guardar</button>
+      <div class="flex items-center gap-2">
+        <button id="btn-cargar-carrofogon" class="bg-blue-600/20 text-blue-400 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-blue-600/40 transition-all">Cargar desde CarroFogon</button>
+        <button id="btn-guardar-ventas" class="bg-emerald-600/20 text-emerald-400 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-emerald-600/40 transition-all">Guardar</button>
+      </div>
     </div>
     <div class="overflow-x-auto">
       <table class="w-full text-sm">
@@ -60,6 +63,7 @@ import Layout from '../layouts/Layout.astro';
         </tbody>
       </table>
     </div>
+    <div id="carrofogon-status" class="hidden border-t border-dark-border/50 p-3 text-xs"></div>
   </div>
 
   <!-- Gastos extra -->
@@ -378,6 +382,92 @@ import Layout from '../layouts/Layout.astro';
 
     await cargarTodo();
     alert('Ventas guardadas ✓');
+  });
+
+  // ─── Cargar ventas desde CarroFogon (tabla pedidos) ───
+  function normalizarNombre(n: string): string {
+    return n.toLowerCase().trim()
+      .replace(/\s+/g, ' ')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, ''); // quita acentos
+  }
+
+  document.getElementById('btn-cargar-carrofogon')!.addEventListener('click', async () => {
+    const btn = document.getElementById('btn-cargar-carrofogon') as HTMLButtonElement;
+    btn.disabled = true;
+    btn.textContent = 'Cargando...';
+
+    const statusEl = document.getElementById('carrofogon-status')!;
+
+    try {
+      const { data: pedidos } = await db.from('pedidos')
+        .select('productos')
+        .gte('fecha', `${mesActual}-01`)
+        .lt('fecha', getNextMonth(mesActual));
+
+      if (!pedidos?.length) {
+        statusEl.classList.remove('hidden');
+        statusEl.innerHTML = '<span class="text-text-muted">No se encontraron pedidos en CarroFogon para este mes.</span>';
+        btn.disabled = false;
+        btn.textContent = 'Cargar desde CarroFogon';
+        return;
+      }
+
+      const conteoFogon = new Map<string, number>(); // nombre normalizado → cantidad
+      for (const ped of pedidos) {
+        const prods = typeof ped.productos === 'string' ? JSON.parse(ped.productos) : (ped.productos ?? []);
+        for (const p of prods) {
+          const key = normalizarNombre(p.nombre ?? '');
+          if (key) conteoFogon.set(key, (conteoFogon.get(key) ?? 0) + (p.cantidad ?? 1));
+        }
+      }
+
+      // Match contra precios_venta
+      const nombreNormToPid = new Map<string, { id: string; nombre: string }>();
+      for (const p of productosVenta) {
+        nombreNormToPid.set(normalizarNombre(p.nombre), { id: p.id, nombre: p.nombre });
+      }
+
+      let matched = 0;
+      let unmatched: string[] = [];
+
+      for (const [fogonName, qty] of conteoFogon) {
+        const match = nombreNormToPid.get(fogonName);
+        if (match) {
+          unidadesPorProducto.set(match.id, qty);
+          const p = productosVenta.find(x => x.id === match.id);
+          if (p) p.unidades = qty;
+          matched++;
+        } else {
+          unmatched.push(fogonName);
+        }
+      }
+
+      // Productos no matcheados se ponen en 0
+      for (const p of productosVenta) {
+        if (!unidadesPorProducto.has(p.id)) {
+          unidadesPorProducto.set(p.id, 0);
+          p.unidades = 0;
+        }
+      }
+
+      renderVentas();
+      actualizarResumen();
+
+      statusEl.classList.remove('hidden');
+      let msg = `<span class="text-blue-400 font-bold">✓ ${matched} productos sincronizados</span>`;
+      msg += `<span class="text-text-muted ml-2">de ${pedidos.length} pedidos en CarroFogon.</span>`;
+      if (unmatched.length > 0) {
+        msg += `<div class="mt-1 text-amber-400">⚠ No vinculados (${unmatched.length}): ${unmatched.map(n => `"${n}"`).join(', ')}</div>`;
+        msg += `<div class="text-text-muted text-[0.6rem] mt-1">Revisá que los nombres en CarroFogon coincidan exactamente con los de Precios.</div>`;
+      }
+      statusEl.innerHTML = msg;
+    } catch (err: any) {
+      statusEl.classList.remove('hidden');
+      statusEl.innerHTML = `<span class="text-red-400">Error al cargar pedidos: ${err?.message ?? err}</span>`;
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Cargar desde CarroFogon';
   });
 
   // ─── Agregar gasto ───
