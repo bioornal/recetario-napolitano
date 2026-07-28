@@ -48,6 +48,7 @@ import Layout from '../layouts/Layout.astro';
       <h2 class="text-xs uppercase tracking-wider text-accent-gold font-bold">Ventas del mes</h2>
       <div class="flex items-center gap-2">
         <button id="btn-cargar-carrofogon" class="bg-blue-600/20 text-blue-400 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-blue-600/40 transition-all">Cargar desde CarroFogon</button>
+        <button id="btn-mostrar-todos" class="text-text-muted text-xs hover:text-text-main transition-all">Mostrar todos</button>
         <button id="btn-guardar-ventas" class="bg-emerald-600/20 text-emerald-400 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-emerald-600/40 transition-all">Guardar</button>
       </div>
     </div>
@@ -167,6 +168,7 @@ import Layout from '../layouts/Layout.astro';
   let productosVenta: any[] = [];
   let unidadesPorProducto: Map<string, number> = new Map();
   let gastosData: any[] = [];
+  let _mostrarTodos = false;
 
   const CATEGORIAS = ['Pizzas', 'Calzones', 'Empanadas', 'Hamburguesas', 'Lomos', 'Otros'] as const;
 
@@ -287,17 +289,19 @@ import Layout from '../layouts/Layout.astro';
     let html = '';
     for (const cat of CATEGORIAS) {
       const filas = porCategoria.get(cat)!;
-      if (filas.length === 0) continue;
+      // Solo mostrar productos con ventas (o todos si toggle activo)
+      const conVentas = _mostrarTodos ? filas : filas.filter(p => p.unidades > 0);
+      if (conVentas.length === 0) continue;
 
       html += `<tr class="bg-dark-surface/60 border-t-2 border-emerald-500/30">
         <td colspan="6" class="px-3 py-2">
           <span class="text-emerald-400 text-[0.65rem] font-bold uppercase tracking-widest">${cat}</span>
-          <span class="text-text-muted text-[0.6rem] ml-2">${filas.length} producto${filas.length !== 1 ? 's' : ''}</span>
+          <span class="text-text-muted text-[0.6rem] ml-2">${conVentas.length} producto${conVentas.length !== 1 ? 's' : ''}</span>
         </td>
       </tr>`;
 
       // Ordenar por unidades vendidas descendente
-      const ordenadas = [...filas].sort((a, b) => b.unidades - a.unidades);
+      const ordenadas = [...conVentas].sort((a, b) => b.unidades - a.unidades);
 
       for (const p of ordenadas) {
         const margenUnit = p.precioVenta > 0 ? Math.round((1 - p.costoUnit / p.precioVenta) * 1000) / 10 : 0;
@@ -319,7 +323,7 @@ import Layout from '../layouts/Layout.astro';
       }
     }
 
-    document.getElementById('tbody-ventas')!.innerHTML = html || '<tr><td colspan="6" class="p-6 text-center text-text-muted text-sm">No hay productos en la lista de precios.</td></tr>';
+    document.getElementById('tbody-ventas')!.innerHTML = html || '<tr><td colspan="6" class="p-6 text-center text-text-muted text-sm">Sin ventas este mes. Cargá desde CarroFogon o ingresá unidades manualmente.</td></tr>';
 
     // Event listeners
     document.querySelectorAll('.inp-unidades').forEach(inp => {
@@ -557,6 +561,14 @@ import Layout from '../layouts/Layout.astro';
 
     btn.disabled = false;
     btn.textContent = 'Cargar desde CarroFogon';
+  });
+
+  // ─── Toggle mostrar todos ───
+  document.getElementById('btn-mostrar-todos')!.addEventListener('click', () => {
+    _mostrarTodos = !_mostrarTodos;
+    const btn = document.getElementById('btn-mostrar-todos')!;
+    btn.textContent = _mostrarTodos ? 'Solo con ventas' : 'Mostrar todos';
+    renderVentas();
   });
 
   // ─── Agregar gasto ───
