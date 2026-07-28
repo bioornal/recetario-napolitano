@@ -262,6 +262,8 @@ import Layout from '../layouts/Layout.astro';
         id: item.id,
         nombre: item.nombre,
         subcategoria: cat,
+        recetaNombre: receta?.nombre ?? null,
+        recetaId: item.receta_id ?? null,
         costoUnit,
         costoReal,
         precioVenta,
@@ -316,7 +318,10 @@ import Layout from '../layouts/Layout.astro';
         const subtotal = p.precioVenta * p.unidades;
         const ganancia = p.unidades > 0 ? (p.precioVenta - p.costoUnit) * p.unidades : 0;
         html += `<tr class="border-b border-dark-border/20 hover:bg-dark-surface/20 ${p.unidades > 0 ? '' : 'opacity-50'}">
-          <td class="p-3 text-text-main">${escapeHtml(p.nombre)}</td>
+          <td class="p-3">
+            <span class="text-text-main">${escapeHtml(p.nombre)}</span>
+            ${p.recetaNombre ? `<br><span class="text-text-muted text-[0.6rem]">↳ Receta: ${escapeHtml(p.recetaNombre)}</span>` : p.recetaId ? `<br><span class="text-text-muted text-[0.6rem]">↳ Receta: ${escapeHtml(p.recetaId.slice(0, 8))}...</span>` : ''}
+          </td>
           <td class="p-3 text-right text-text-main font-mono">${fmt(p.precioVenta)}</td>
           <td class="p-3 text-right text-amber-400 font-mono">${fmt(p.costoUnit)}</td>
           <td class="p-3 text-right ${margenColor} font-bold font-mono">${p.precioVenta > 0 ? margenUnit + '%' : '—'}</td>
@@ -372,7 +377,10 @@ import Layout from '../layouts/Layout.astro';
       const rankIcon = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : (idx + 1);
       return `<tr class="border-b border-dark-border/20 ${rankBg}">
         <td class="p-3 font-bold text-center">${rankIcon}</td>
-        <td class="p-3 text-text-main font-medium">${escapeHtml(p.nombre)}</td>
+        <td class="p-3">
+          <span class="text-text-main font-medium">${escapeHtml(p.nombre)}</span>
+          ${p.recetaNombre ? `<br><span class="text-text-muted text-[0.6rem]">↳ ${escapeHtml(p.recetaNombre)}</span>` : ''}
+        </td>
         <td class="p-3 text-right text-accent-gold font-bold font-mono text-lg">${p.unidades}</td>
         <td class="p-3 text-right text-text-main font-mono">${fmt(p.precioVenta)}</td>
         <td class="p-3 text-right text-amber-400 font-mono">${fmt(p.costoUnit)}</td>
