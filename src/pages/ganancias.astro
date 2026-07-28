@@ -21,12 +21,12 @@ import Layout from '../layouts/Layout.astro';
       <p class="font-bold text-emerald-400 text-lg" id="ctx-facturacion">—</p>
     </div>
     <div>
-      <p class="text-[0.6rem] text-text-muted uppercase tracking-wider">Costo Ingred.</p>
-      <p class="font-bold text-amber-400" id="ctx-costo-ing">—</p>
+      <p class="text-[0.6rem] text-text-muted uppercase tracking-wider">Ganancia Bruta</p>
+      <p class="font-bold text-accent-gold" id="ctx-ganancia-bruta">—</p>
     </div>
     <div>
-      <p class="text-[0.6rem] text-text-muted uppercase tracking-wider">Margen Prom.</p>
-      <p class="font-bold text-accent-gold" id="ctx-margen-prom">—</p>
+      <p class="text-[0.6rem] text-text-muted uppercase tracking-wider">Margen Bruto</p>
+      <p class="font-bold text-emerald-400" id="ctx-margen-bruto">—</p>
     </div>
     <div>
       <p class="text-[0.6rem] text-text-muted uppercase tracking-wider">Costo Op. Mes</p>
@@ -58,14 +58,15 @@ import Layout from '../layouts/Layout.astro';
           <tr class="text-text-muted text-[0.65rem] uppercase tracking-wider border-b border-dark-border/50">
             <th class="text-left p-3">Producto</th>
             <th class="text-right p-3">Precio</th>
-            <th class="text-right p-3">Costo</th>
+            <th class="text-right p-3">Costo Full</th>
             <th class="text-right p-3">Margen</th>
             <th class="text-right p-3 w-28">Unidades</th>
-            <th class="text-right p-3">Subtotal</th>
+            <th class="text-right p-3">Facturación</th>
+            <th class="text-right p-3">Ganancia</th>
           </tr>
         </thead>
         <tbody id="tbody-ventas">
-          <tr><td colspan="6" class="p-6 text-center text-text-muted text-sm">Cargando ventas...</td></tr>
+          <tr><td colspan="7" class="p-6 text-center text-text-muted text-sm">Cargando ventas...</td></tr>
         </tbody>
       </table>
     </div>
@@ -85,10 +86,9 @@ import Layout from '../layouts/Layout.astro';
             <th class="text-left p-3 w-8">#</th>
             <th class="text-left p-3">Producto</th>
             <th class="text-right p-3">Unidades</th>
-            <th class="text-right p-3">Precio</th>
-            <th class="text-right p-3">Costo</th>
-            <th class="text-right p-3">Margen</th>
             <th class="text-right p-3">Facturación</th>
+            <th class="text-right p-3">Ganancia Bruta</th>
+            <th class="text-right p-3">Margen</th>
           </tr>
         </thead>
         <tbody id="tbody-ranking"></tbody>
@@ -123,18 +123,22 @@ import Layout from '../layouts/Layout.astro';
 
   <!-- Resumen final -->
   <div class="glass-panel rounded-2xl p-5 mb-4">
-    <h2 class="text-xs uppercase tracking-wider text-emerald-400 font-bold mb-4">Resumen del mes</h2>
+    <h2 class="text-xs uppercase tracking-wider text-emerald-400 font-bold mb-4">Estado de Resultados del Mes</h2>
     <div class="space-y-3">
       <div class="flex justify-between items-center py-2 border-b border-dark-border/30">
         <span class="text-sm text-text-main">+ Facturación</span>
         <span class="text-sm font-bold text-emerald-400" id="res-facturacion">$0</span>
       </div>
       <div class="flex justify-between items-center py-2 border-b border-dark-border/30">
-        <span class="text-sm text-text-main">− Costo ingredientes</span>
-        <span class="text-sm font-bold text-amber-400" id="res-costo-ing">$0</span>
+        <span class="text-sm text-text-main">− Costo de producción (ingredientes)</span>
+        <span class="text-sm font-bold text-amber-400" id="res-costo-prod">$0</span>
+      </div>
+      <div class="flex justify-between items-center py-3 bg-accent-gold/10 rounded-xl px-3 -mx-2">
+        <span class="text-sm font-bold text-text-main uppercase">= Ganancia Bruta</span>
+        <span class="text-lg font-bold text-accent-gold" id="res-ganancia-bruta">$0</span>
       </div>
       <div class="flex justify-between items-center py-2 border-b border-dark-border/30">
-        <span class="text-sm text-text-main">− Costos operativos</span>
+        <span class="text-sm text-text-main">− Costos operativos (fijos + variables)</span>
         <span class="text-sm font-bold text-purple-400" id="res-costo-op">$0</span>
       </div>
       <div class="flex justify-between items-center py-2 border-b border-dark-border/30">
@@ -142,11 +146,11 @@ import Layout from '../layouts/Layout.astro';
         <span class="text-sm font-bold text-red-400" id="res-gastos">$0</span>
       </div>
       <div class="flex justify-between items-center py-3 bg-emerald-500/10 rounded-xl px-3 -mx-2">
-        <span class="text-sm font-bold text-text-main uppercase">= Ganancia neta</span>
+        <span class="text-sm font-bold text-text-main uppercase">= Ganancia Neta</span>
         <span class="text-lg font-bold text-emerald-400" id="res-ganancia">$0</span>
       </div>
       <div class="flex justify-between items-center pt-1">
-        <span class="text-sm text-text-main">Margen real</span>
+        <span class="text-sm text-text-main">Margen neto</span>
         <span class="text-sm font-bold text-emerald-400" id="res-margen">—</span>
       </div>
     </div>
@@ -303,7 +307,7 @@ import Layout from '../layouts/Layout.astro';
       if (conVentas.length === 0) continue;
 
       html += `<tr class="bg-dark-surface/60 border-t-2 border-emerald-500/30">
-        <td colspan="6" class="px-3 py-2">
+        <td colspan="7" class="px-3 py-2">
           <span class="text-emerald-400 text-[0.65rem] font-bold uppercase tracking-widest">${cat}</span>
           <span class="text-text-muted text-[0.6rem] ml-2">${conVentas.length} producto${conVentas.length !== 1 ? 's' : ''}</span>
         </td>
@@ -313,29 +317,30 @@ import Layout from '../layouts/Layout.astro';
       const ordenadas = [...conVentas].sort((a, b) => b.unidades - a.unidades);
 
       for (const p of ordenadas) {
-        const margenUnit = p.precioVenta > 0 ? Math.round((1 - p.costoUnit / p.precioVenta) * 1000) / 10 : 0;
+        const margenUnit = p.precioVenta > 0 ? Math.round((1 - p.costoReal / p.precioVenta) * 1000) / 10 : 0;
         const margenColor = margenUnit >= 40 ? 'text-emerald-400' : margenUnit >= 25 ? 'text-accent-gold' : 'text-red-400';
-        const subtotal = p.precioVenta * p.unidades;
-        const ganancia = p.unidades > 0 ? (p.precioVenta - p.costoUnit) * p.unidades : 0;
+        const facturacion = p.precioVenta * p.unidades;
+        const ganancia = (p.precioVenta - p.costoReal) * p.unidades;
         html += `<tr class="border-b border-dark-border/20 hover:bg-dark-surface/20 ${p.unidades > 0 ? '' : 'opacity-50'}">
           <td class="p-3">
             <span class="text-text-main">${escapeHtml(p.nombre)}</span>
             ${p.recetaNombre ? `<br><span class="text-text-muted text-[0.6rem]">↳ Receta: ${escapeHtml(p.recetaNombre)}</span>` : p.recetaId ? `<br><span class="text-text-muted text-[0.6rem]">↳ Receta: ${escapeHtml(p.recetaId.slice(0, 8))}...</span>` : ''}
           </td>
           <td class="p-3 text-right text-text-main font-mono">${fmt(p.precioVenta)}</td>
-          <td class="p-3 text-right text-amber-400 font-mono">${fmt(p.costoUnit)}</td>
+          <td class="p-3 text-right text-amber-400 font-mono">${fmt(p.costoReal)}</td>
           <td class="p-3 text-right ${margenColor} font-bold font-mono">${p.precioVenta > 0 ? margenUnit + '%' : '—'}</td>
           <td class="p-3 text-right">
             <input type="number" min="0" step="1" value="${p.unidades}"
               data-pid="${p.id}"
               class="w-20 bg-dark-bg border border-dark-border rounded-lg px-2 py-1 text-right text-accent-gold text-sm focus:ring-1 focus:ring-accent-amber/50 outline-none inp-unidades">
           </td>
-          <td class="p-3 text-right text-emerald-400 font-bold font-mono">${fmt(subtotal)}</td>
+          <td class="p-3 text-right text-emerald-400 font-bold font-mono">${fmt(facturacion)}</td>
+          <td class="p-3 text-right text-emerald-400 font-bold font-mono">${fmt(ganancia)}</td>
         </tr>`;
       }
     }
 
-    document.getElementById('tbody-ventas')!.innerHTML = html || '<tr><td colspan="6" class="p-6 text-center text-text-muted text-sm">Sin ventas este mes. Cargá desde CarroFogon o ingresá unidades manualmente.</td></tr>';
+    document.getElementById('tbody-ventas')!.innerHTML = html || '<tr><td colspan="7" class="p-6 text-center text-text-muted text-sm">Sin ventas este mes. Cargá desde CarroFogon o ingresá unidades manualmente.</td></tr>';
 
     // Event listeners
     document.querySelectorAll('.inp-unidades').forEach(inp => {
@@ -370,9 +375,10 @@ import Layout from '../layouts/Layout.astro';
 
     panel.classList.remove('hidden');
     tbody.innerHTML = vendidos.map((p, idx) => {
-      const margenUnit = p.precioVenta > 0 ? Math.round((1 - p.costoUnit / p.precioVenta) * 1000) / 10 : 0;
+      const margenUnit = p.precioVenta > 0 ? Math.round((1 - p.costoReal / p.precioVenta) * 1000) / 10 : 0;
       const margenColor = margenUnit >= 40 ? 'text-emerald-400' : margenUnit >= 25 ? 'text-accent-gold' : 'text-red-400';
       const facturacion = p.precioVenta * p.unidades;
+      const ganancia = (p.precioVenta - p.costoReal) * p.unidades;
       const rankBg = idx === 0 ? 'bg-accent-gold/10' : idx === 1 ? 'bg-text-muted/5' : idx === 2 ? 'bg-amber-400/5' : '';
       const rankIcon = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : (idx + 1);
       return `<tr class="border-b border-dark-border/20 ${rankBg}">
@@ -382,26 +388,24 @@ import Layout from '../layouts/Layout.astro';
           ${p.recetaNombre ? `<br><span class="text-text-muted text-[0.6rem]">↳ ${escapeHtml(p.recetaNombre)}</span>` : ''}
         </td>
         <td class="p-3 text-right text-accent-gold font-bold font-mono text-lg">${p.unidades}</td>
-        <td class="p-3 text-right text-text-main font-mono">${fmt(p.precioVenta)}</td>
-        <td class="p-3 text-right text-amber-400 font-mono">${fmt(p.costoUnit)}</td>
-        <td class="p-3 text-right ${margenColor} font-bold font-mono">${p.precioVenta > 0 ? margenUnit + '%' : '—'}</td>
         <td class="p-3 text-right text-emerald-400 font-bold font-mono">${fmt(facturacion)}</td>
+        <td class="p-3 text-right text-emerald-400 font-bold font-mono">${fmt(ganancia)}</td>
+        <td class="p-3 text-right ${margenColor} font-bold font-mono">${p.precioVenta > 0 ? margenUnit + '%' : '—'}</td>
       </tr>`;
     }).join('');
 
     // Totales del ranking
     const totalUnidades = vendidos.reduce((a, p) => a + p.unidades, 0);
     const totalFacturacion = vendidos.reduce((a, p) => a + p.precioVenta * p.unidades, 0);
-    const totalGanancia = vendidos.reduce((a, p) => a + (p.precioVenta - p.costoUnit) * p.unidades, 0);
+    const totalGanancia = vendidos.reduce((a, p) => a + (p.precioVenta - p.costoReal) * p.unidades, 0);
     const margenPromedio = totalFacturacion > 0 ? Math.round((totalGanancia / totalFacturacion) * 1000) / 10 : 0;
 
     tbody.innerHTML += `<tr class="border-t-2 border-emerald-500/30 bg-dark-surface/40 font-bold text-xs">
       <td class="p-3" colspan="2"><span class="text-text-muted uppercase tracking-wider">Totales (${vendidos.length} productos)</span></td>
       <td class="p-3 text-right text-accent-gold font-mono">${totalUnidades}</td>
-      <td class="p-3"></td>
-      <td class="p-3"></td>
-      <td class="p-3 text-right text-emerald-400 font-mono">${margenPromedio}%</td>
       <td class="p-3 text-right text-emerald-400 font-mono">${fmt(totalFacturacion)}</td>
+      <td class="p-3 text-right text-emerald-400 font-mono">${fmt(totalGanancia)}</td>
+      <td class="p-3 text-right text-emerald-400 font-mono">${margenPromedio}%</td>
     </tr>`;
   }
 
@@ -435,32 +439,34 @@ import Layout from '../layouts/Layout.astro';
   // ─── Resumen ───
   function actualizarResumen() {
     const facturacion = productosVenta.reduce((a, p) => a + p.precioVenta * p.unidades, 0);
-    const costoIng = productosVenta.reduce((a, p) => a + p.costoUnit * p.unidades, 0);
+    const costoProd = productosVenta.reduce((a, p) => a + p.costoUnit * p.unidades, 0);
+    const gananciaBruta = facturacion - costoProd;
     const gastosExtra = gastosData.reduce((a: number, g: any) => a + g.monto, 0);
-    const gananciaBruta = facturacion - costoIng;
     const gananciaNeta = gananciaBruta - totalOp - gastosExtra;
-    const margen = facturacion > 0 ? Math.round((gananciaNeta / facturacion) * 1000) / 10 : 0;
+    const margenBruto = facturacion > 0 ? Math.round((gananciaBruta / facturacion) * 1000) / 10 : 0;
+    const margenNeto = facturacion > 0 ? Math.round((gananciaNeta / facturacion) * 1000) / 10 : 0;
 
+    // Context bar
     document.getElementById('ctx-facturacion')!.textContent = fmt(facturacion);
-    document.getElementById('ctx-costo-ing')!.textContent = fmt(costoIng);
+    document.getElementById('ctx-ganancia-bruta')!.textContent = fmt(gananciaBruta);
+    const margenBrutoEl = document.getElementById('ctx-margen-bruto')!;
+    margenBrutoEl.textContent = facturacion > 0 ? `${margenBruto}%` : '—';
+    margenBrutoEl.className = `font-bold ${margenBruto >= 40 ? 'text-emerald-400' : margenBruto >= 25 ? 'text-accent-gold' : 'text-red-400'}`;
     document.getElementById('ctx-costo-op')!.textContent = fmt(totalOp);
     document.getElementById('ctx-gastos-extra')!.textContent = fmt(gastosExtra);
     document.getElementById('ctx-ganancia')!.textContent = fmt(gananciaNeta);
 
-    const margenProm = facturacion > 0 ? Math.round(((facturacion - costoIng) / facturacion) * 1000) / 10 : 0;
-    const margenPromEl = document.getElementById('ctx-margen-prom')!;
-    margenPromEl.textContent = facturacion > 0 ? `${margenProm}%` : '—';
-    margenPromEl.className = `font-bold ${margenProm >= 40 ? 'text-emerald-400' : margenProm >= 25 ? 'text-accent-gold' : 'text-red-400'}`;
-
+    // Resumen
     document.getElementById('res-facturacion')!.textContent = fmt(facturacion);
-    document.getElementById('res-costo-ing')!.textContent = fmt(costoIng);
+    document.getElementById('res-costo-prod')!.textContent = fmt(costoProd);
+    document.getElementById('res-ganancia-bruta')!.textContent = fmt(gananciaBruta);
     document.getElementById('res-costo-op')!.textContent = fmt(totalOp);
     document.getElementById('res-gastos')!.textContent = fmt(gastosExtra);
     document.getElementById('res-ganancia')!.textContent = fmt(gananciaNeta);
 
     const margenEl = document.getElementById('res-margen')!;
-    margenEl.textContent = margen > 0 ? `${margen}%` : '—';
-    margenEl.className = `text-sm font-bold ${margen >= 30 ? 'text-emerald-400' : margen >= 10 ? 'text-amber-400' : 'text-red-400'}`;
+    margenEl.textContent = facturacion > 0 ? `${margenNeto}%` : '—';
+    margenEl.className = `text-sm font-bold ${margenNeto >= 30 ? 'text-emerald-400' : margenNeto >= 10 ? 'text-amber-400' : 'text-red-400'}`;
   }
 
   // ─── Guardar ventas ───
