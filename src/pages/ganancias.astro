@@ -1,0 +1,402 @@
+---
+export const prerender = true;
+import Layout from '../layouts/Layout.astro';
+---
+<Layout title="Ganancias">
+  <header class="py-6 mb-4 border-b border-dark-border/50 flex items-center justify-between flex-wrap gap-3">
+    <div>
+      <h1 class="font-['Outfit'] text-2xl font-bold text-emerald-400">📊 Ganancias</h1>
+      <p class="text-xs text-text-muted mt-1">Facturación, costos y ganancias del mes</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <input type="month" id="inp-mes"
+        class="bg-dark-surface border border-dark-border rounded-xl px-3 py-1.5 text-text-main text-sm focus:ring-2 focus:ring-emerald-500/50 outline-none">
+    </div>
+  </header>
+
+  <!-- Context bar -->
+  <div class="glass-panel rounded-2xl p-4 mb-4 grid grid-cols-2 lg:grid-cols-5 gap-3">
+    <div>
+      <p class="text-[0.6rem] text-text-muted uppercase tracking-wider">Facturación</p>
+      <p class="font-bold text-emerald-400 text-lg" id="ctx-facturacion">—</p>
+    </div>
+    <div>
+      <p class="text-[0.6rem] text-text-muted uppercase tracking-wider">Costo Ingred.</p>
+      <p class="font-bold text-amber-400" id="ctx-costo-ing">—</p>
+    </div>
+    <div>
+      <p class="text-[0.6rem] text-text-muted uppercase tracking-wider">Costo Op. Mes</p>
+      <p class="font-bold text-purple-400" id="ctx-costo-op">—</p>
+    </div>
+    <div>
+      <p class="text-[0.6rem] text-text-muted uppercase tracking-wider">Gastos Extra</p>
+      <p class="font-bold text-red-400" id="ctx-gastos-extra">—</p>
+    </div>
+    <div>
+      <p class="text-[0.6rem] text-text-muted uppercase tracking-wider">Ganancia Neta</p>
+      <p class="font-bold text-emerald-400 text-lg" id="ctx-ganancia">—</p>
+    </div>
+  </div>
+
+  <!-- Ventas del mes -->
+  <div class="glass-panel rounded-2xl overflow-hidden mb-4">
+    <div class="flex items-center justify-between p-4 border-b border-dark-border/50">
+      <h2 class="text-xs uppercase tracking-wider text-accent-gold font-bold">Ventas del mes</h2>
+      <button id="btn-guardar-ventas" class="bg-emerald-600/20 text-emerald-400 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-emerald-600/40 transition-all">Guardar</button>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-text-muted text-[0.65rem] uppercase tracking-wider border-b border-dark-border/50">
+            <th class="text-left p-3">Producto</th>
+            <th class="text-right p-3">Precio Venta</th>
+            <th class="text-right p-3">Costo Unit.</th>
+            <th class="text-right p-3 w-28">Unid. Vendidas</th>
+            <th class="text-right p-3">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-ventas">
+          <tr><td colspan="5" class="p-6 text-center text-text-muted text-sm">Cargando ventas...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Gastos extra -->
+  <div class="glass-panel rounded-2xl overflow-hidden mb-4">
+    <div class="flex items-center justify-between p-4 border-b border-dark-border/50">
+      <h2 class="text-xs uppercase tracking-wider text-red-400 font-bold">Gastos extra del mes</h2>
+      <button id="btn-add-gasto" class="bg-red-600/20 text-red-400 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-red-600/40 transition-all">+ Agregar gasto</button>
+    </div>
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-text-muted text-[0.65rem] uppercase tracking-wider border-b border-dark-border/30">
+          <th class="text-left p-3">Fecha</th>
+          <th class="text-left p-3">Concepto</th>
+          <th class="text-right p-3">Monto ($)</th>
+          <th class="p-3"></th>
+        </tr>
+      </thead>
+      <tbody id="tbody-gastos">
+        <tr><td colspan="4" class="p-4 text-center text-text-muted text-sm">Cargando gastos...</td></tr>
+      </tbody>
+    </table>
+    <div class="flex justify-between p-4 border-t border-dark-border/50 bg-dark-surface/50">
+      <span class="text-xs text-text-muted uppercase tracking-wider">Total gastos extra</span>
+      <span class="font-bold text-red-400" id="total-gastos">$0</span>
+    </div>
+  </div>
+
+  <!-- Resumen final -->
+  <div class="glass-panel rounded-2xl p-5 mb-4">
+    <h2 class="text-xs uppercase tracking-wider text-emerald-400 font-bold mb-4">Resumen del mes</h2>
+    <div class="space-y-3">
+      <div class="flex justify-between items-center py-2 border-b border-dark-border/30">
+        <span class="text-sm text-text-main">+ Facturación</span>
+        <span class="text-sm font-bold text-emerald-400" id="res-facturacion">$0</span>
+      </div>
+      <div class="flex justify-between items-center py-2 border-b border-dark-border/30">
+        <span class="text-sm text-text-main">− Costo ingredientes</span>
+        <span class="text-sm font-bold text-amber-400" id="res-costo-ing">$0</span>
+      </div>
+      <div class="flex justify-between items-center py-2 border-b border-dark-border/30">
+        <span class="text-sm text-text-main">− Costos operativos</span>
+        <span class="text-sm font-bold text-purple-400" id="res-costo-op">$0</span>
+      </div>
+      <div class="flex justify-between items-center py-2 border-b border-dark-border/30">
+        <span class="text-sm text-text-main">− Gastos extra</span>
+        <span class="text-sm font-bold text-red-400" id="res-gastos">$0</span>
+      </div>
+      <div class="flex justify-between items-center py-3 bg-emerald-500/10 rounded-xl px-3 -mx-2">
+        <span class="text-sm font-bold text-text-main uppercase">= Ganancia neta</span>
+        <span class="text-lg font-bold text-emerald-400" id="res-ganancia">$0</span>
+      </div>
+      <div class="flex justify-between items-center pt-1">
+        <span class="text-sm text-text-main">Margen real</span>
+        <span class="text-sm font-bold text-emerald-400" id="res-margen">—</span>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { insforge } from '../lib/insforge';
+  import { calcCostoOperativoPorPizza, calcCostoReceta, calcPrecioEfectivo } from '../utils/pricing';
+  import { fmt, showDbError, escapeHtml, dbWrite } from '../utils/fmt';
+
+  const db = insforge.database;
+
+  // ─── Estado global ───
+  let mesActual = '';
+  let totalOp = 0;
+  let precioPrepizzaGlobal = 485;
+  let precioSalsaGlobal = 236;
+  let productosVenta: any[] = [];
+  let unidadesPorProducto: Map<string, number> = new Map();
+  let gastosData: any[] = [];
+
+  const CATEGORIAS = ['Pizzas', 'Calzones', 'Empanadas', 'Hamburguesas', 'Lomos', 'Otros'] as const;
+
+  function getMonthStr(d: Date) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  }
+
+  // ─── Inicializar mes actual ───
+  mesActual = getMonthStr(new Date());
+  (document.getElementById('inp-mes') as HTMLInputElement).value = mesActual;
+
+  document.getElementById('inp-mes')!.addEventListener('change', async () => {
+    mesActual = (document.getElementById('inp-mes') as HTMLInputElement).value;
+    await cargarTodo();
+  });
+
+  // ─── Carga principal ───
+  async function cargarTodo() {
+    const [
+      { data: precios },
+      { data: recetas },
+      { data: recetaIngs },
+      { data: ingredientes },
+      { data: ventasMes },
+      { data: fijos },
+      { data: variables },
+      { data: config },
+      { data: gastosRows },
+    ] = await Promise.all([
+      db.from('precios_venta').select('*').order('nombre', { ascending: true }),
+      db.from('recetas').select('id, nombre, precio_prepizza, precio_salsa'),
+      db.from('receta_ingredientes').select('*'),
+      db.from('ingredientes').select('id, precio_kg, multiplo_rendimiento'),
+      db.from('ventas_mes').select('*').eq('mes', mesActual),
+      db.from('costos_fijos').select('monto').eq('activo', true),
+      db.from('costos_variables').select('monto_referencia'),
+      db.from('config_negocio').select('pizzas_objetivo_mes, precio_prepizza_default, precio_salsa_default').limit(1),
+      db.from('gastos').select('*').gte('fecha', `${mesActual}-01`).lt('fecha', getNextMonth(mesActual)).order('fecha', { ascending: false }),
+    ]);
+
+    // Costo operativo total
+    totalOp = [
+      ...(fijos ?? []).map((c: any) => c.monto),
+      ...(variables ?? []).map((c: any) => c.monto_referencia),
+    ].reduce((a: number, b: number) => a + b, 0);
+
+    precioPrepizzaGlobal = config?.[0]?.precio_prepizza_default ?? 485;
+    precioSalsaGlobal = config?.[0]?.precio_salsa_default ?? 236;
+
+    // Mapas
+    const recetasMap = new Map((recetas ?? []).map((r: any) => [r.id, r]));
+    const ingMap = new Map((ingredientes ?? []).map((i: any) => [i.id, i]));
+    const riByReceta = new Map<string, any[]>();
+    for (const ri of (recetaIngs ?? [])) {
+      if (!riByReceta.has(ri.receta_id)) riByReceta.set(ri.receta_id, []);
+      riByReceta.get(ri.receta_id)!.push(ri);
+    }
+
+    // Unidades vendidas del mes
+    unidadesPorProducto = new Map();
+    for (const v of (ventasMes ?? [])) {
+      unidadesPorProducto.set(v.precio_venta_id, v.unidades);
+    }
+
+    // Armar productos con costos
+    productosVenta = [];
+    for (const item of (precios ?? [])) {
+      const receta = item.receta_id ? recetasMap.get(item.receta_id) : null;
+      let costoUnit = 0;
+      if (receta) {
+        const ings = (riByReceta.get(receta.id) ?? []).map((ri: any) => {
+          const ing = ingMap.get(ri.ingrediente_id);
+          return {
+            precio_kg: Number(ing?.precio_kg ?? 0),
+            cantidad_kg: Number(ri.cantidad_kg),
+            multiplo_rendimiento: Number(ing?.multiplo_rendimiento ?? 1),
+          };
+        });
+        costoUnit = calcCostoReceta(ings, receta.precio_prepizza, receta.precio_salsa);
+      }
+      const precioVenta = calcPrecioEfectivo(costoUnit, item.markup);
+      const unidades = unidadesPorProducto.get(item.id) ?? 0;
+
+      productosVenta.push({
+        id: item.id,
+        nombre: item.nombre,
+        subcategoria: CATEGORIAS.includes(item.subcategoria) ? item.subcategoria : 'Otros',
+        costoUnit,
+        precioVenta,
+        markup: item.markup,
+        unidades,
+      });
+    }
+
+    // Gastos
+    gastosData = gastosRows ?? [];
+
+    renderVentas();
+    renderGastos();
+    actualizarResumen();
+  }
+
+  function getNextMonth(ym: string): string {
+    const [y, m] = ym.split('-').map(Number);
+    if (m === 12) return `${y + 1}-01-01`;
+    return `${y}-${String(m + 1).padStart(2, '0')}-01`;
+  }
+
+  // ─── Render ventas ───
+  function renderVentas() {
+    const porCategoria = new Map<string, any[]>();
+    for (const cat of CATEGORIAS) porCategoria.set(cat, []);
+
+    for (const p of productosVenta) {
+      porCategoria.get(p.subcategoria)!.push(p);
+    }
+
+    let html = '';
+    for (const cat of CATEGORIAS) {
+      const filas = porCategoria.get(cat)!;
+      if (filas.length === 0) continue;
+
+      html += `<tr class="bg-dark-surface/60 border-t-2 border-emerald-500/30">
+        <td colspan="5" class="px-3 py-2">
+          <span class="text-emerald-400 text-[0.65rem] font-bold uppercase tracking-widest">${cat}</span>
+        </td>
+      </tr>`;
+
+      for (const p of filas) {
+        const subtotal = p.precioVenta * p.unidades;
+        html += `<tr class="border-b border-dark-border/20 hover:bg-dark-surface/20">
+          <td class="p-3 text-text-main">${escapeHtml(p.nombre)}</td>
+          <td class="p-3 text-right text-text-main font-mono">${fmt(p.precioVenta)}</td>
+          <td class="p-3 text-right text-amber-400 font-mono">${fmt(p.costoUnit)}</td>
+          <td class="p-3 text-right">
+            <input type="number" min="0" step="1" value="${p.unidades}"
+              data-pid="${p.id}"
+              class="w-20 bg-dark-bg border border-dark-border rounded-lg px-2 py-1 text-right text-accent-gold text-sm focus:ring-1 focus:ring-accent-amber/50 outline-none inp-unidades">
+          </td>
+          <td class="p-3 text-right text-emerald-400 font-bold font-mono">${fmt(subtotal)}</td>
+        </tr>`;
+      }
+    }
+
+    document.getElementById('tbody-ventas')!.innerHTML = html || '<tr><td colspan="5" class="p-6 text-center text-text-muted text-sm">No hay productos en la lista de precios.</td></tr>';
+
+    // Event listeners para cambios de unidades
+    document.querySelectorAll('.inp-unidades').forEach(inp => {
+      inp.addEventListener('input', () => {
+        const el = inp as HTMLInputElement;
+        const pid = el.dataset.pid!;
+        const val = parseInt(el.value) || 0;
+        const p = productosVenta.find(x => x.id === pid);
+        if (p) {
+          p.unidades = val;
+          const row = el.closest('tr')!;
+          const subtotalCell = row.querySelectorAll('td')[4];
+          subtotalCell.textContent = fmt(p.precioVenta * val);
+          actualizarResumen();
+        }
+      });
+    });
+  }
+
+  // ─── Render gastos ───
+  function renderGastos() {
+    const total = gastosData.reduce((a: number, g: any) => a + g.monto, 0);
+    document.getElementById('total-gastos')!.textContent = fmt(total);
+
+    document.getElementById('tbody-gastos')!.innerHTML = gastosData.length === 0
+      ? '<tr><td colspan="4" class="p-4 text-center text-text-muted text-sm">Sin gastos extra este mes.</td></tr>'
+      : gastosData.map((g: any) => `
+        <tr class="border-b border-dark-border/30 hover:bg-dark-surface/30">
+          <td class="p-3 text-text-muted text-xs">${g.fecha?.slice(0, 10) ?? '—'}</td>
+          <td class="p-3 text-text-main">${escapeHtml(g.concepto)}</td>
+          <td class="p-3 text-right text-red-400 font-mono">${fmt(g.monto)}</td>
+          <td class="p-3">
+            <button data-id="${g.id}" class="text-red-400 text-xs hover:text-red-300 btn-del-gasto">✕</button>
+          </td>
+        </tr>
+      `).join('');
+
+    document.querySelectorAll('.btn-del-gasto').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const id = (e.target as HTMLElement).dataset.id!;
+        await dbWrite(() => db.from('gastos').delete().eq('id', id));
+        await cargarTodo();
+      });
+    });
+  }
+
+  // ─── Resumen ───
+  function actualizarResumen() {
+    const facturacion = productosVenta.reduce((a, p) => a + p.precioVenta * p.unidades, 0);
+    const costoIng = productosVenta.reduce((a, p) => a + p.costoUnit * p.unidades, 0);
+    const gastosExtra = gastosData.reduce((a: number, g: any) => a + g.monto, 0);
+    const gananciaBruta = facturacion - costoIng;
+    const gananciaNeta = gananciaBruta - totalOp - gastosExtra;
+    const margen = facturacion > 0 ? Math.round((gananciaNeta / facturacion) * 1000) / 10 : 0;
+
+    document.getElementById('ctx-facturacion')!.textContent = fmt(facturacion);
+    document.getElementById('ctx-costo-ing')!.textContent = fmt(costoIng);
+    document.getElementById('ctx-costo-op')!.textContent = fmt(totalOp);
+    document.getElementById('ctx-gastos-extra')!.textContent = fmt(gastosExtra);
+    document.getElementById('ctx-ganancia')!.textContent = fmt(gananciaNeta);
+
+    document.getElementById('res-facturacion')!.textContent = fmt(facturacion);
+    document.getElementById('res-costo-ing')!.textContent = fmt(costoIng);
+    document.getElementById('res-costo-op')!.textContent = fmt(totalOp);
+    document.getElementById('res-gastos')!.textContent = fmt(gastosExtra);
+    document.getElementById('res-ganancia')!.textContent = fmt(gananciaNeta);
+
+    const margenEl = document.getElementById('res-margen')!;
+    margenEl.textContent = margen > 0 ? `${margen}%` : '—';
+    margenEl.className = `text-sm font-bold ${margen >= 30 ? 'text-emerald-400' : margen >= 10 ? 'text-amber-400' : 'text-red-400'}`;
+  }
+
+  // ─── Guardar ventas ───
+  document.getElementById('btn-guardar-ventas')!.addEventListener('click', async () => {
+    const inserts: any[] = [];
+    const updates: { id: string; unidades: number }[] = [];
+
+    // Cargar IDs existentes de ventas_mes
+    const { data: existing } = await db.from('ventas_mes').select('id, precio_venta_id').eq('mes', mesActual);
+    const existingMap = new Map((existing ?? []).map((v: any) => [v.precio_venta_id, v.id]));
+
+    for (const p of productosVenta) {
+      const eid = existingMap.get(p.id);
+      if (eid) {
+        updates.push({ id: eid, unidades: p.unidades });
+      } else if (p.unidades > 0) {
+        inserts.push({ precio_venta_id: p.id, mes: mesActual, unidades: p.unidades });
+      }
+    }
+
+    if (inserts.length > 0) {
+      await dbWrite(() => db.from('ventas_mes').insert(inserts).select());
+    }
+    for (const u of updates) {
+      await dbWrite(() => db.from('ventas_mes').update({ unidades: u.unidades }).eq('id', u.id).select());
+    }
+
+    await cargarTodo();
+    alert('Ventas guardadas ✓');
+  });
+
+  // ─── Agregar gasto ───
+  document.getElementById('btn-add-gasto')!.addEventListener('click', async () => {
+    const concepto = prompt('Concepto del gasto:');
+    if (!concepto?.trim()) return;
+    const monto = parseInt(prompt('Monto ($):') ?? '0');
+    if (!monto || monto <= 0) return;
+    const fecha = prompt('Fecha (YYYY-MM-DD, dejar vacío para hoy):') || new Date().toISOString().slice(0, 10);
+
+    await dbWrite(() => db.from('gastos').insert([{
+      concepto: concepto.trim(),
+      monto,
+      fecha,
+    }]).select());
+
+    await cargarTodo();
+  });
+
+  // ─── Init ───
+  cargarTodo().catch(showDbError);
+</script>
