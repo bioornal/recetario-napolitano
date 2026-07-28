@@ -155,7 +155,7 @@ import Layout from '../layouts/Layout.astro';
 
 <script>
   import { insforge } from '../lib/insforge';
-  import { calcCostoOperativoPorPizza, calcCostoReceta, calcPrecioEfectivo } from '../utils/pricing';
+  import { calcCostoOperativoPorPizza, calcCostoReceta, calcCostoRealTotal, calcPrecioEfectivo } from '../utils/pricing';
   import { fmt, showDbError, escapeHtml, dbWrite } from '../utils/fmt';
 
   const db = insforge.database;
@@ -163,6 +163,7 @@ import Layout from '../layouts/Layout.astro';
   // ─── Estado global ───
   let mesActual = '';
   let totalOp = 0;
+  let costoOpPorPizza = 0;
   let precioPrepizzaGlobal = 485;
   let precioSalsaGlobal = 236;
   let productosVenta: any[] = [];
@@ -214,6 +215,8 @@ import Layout from '../layouts/Layout.astro';
       ...(fijos ?? []).map((c: any) => c.monto),
       ...(variables ?? []).map((c: any) => c.monto_referencia),
     ].reduce((a: number, b: number) => a + b, 0);
+    const pizzasMes = config?.[0]?.pizzas_objetivo_mes ?? 800;
+    costoOpPorPizza = calcCostoOperativoPorPizza(totalOp, pizzasMes);
 
     precioPrepizzaGlobal = config?.[0]?.precio_prepizza_default ?? 485;
     precioSalsaGlobal = config?.[0]?.precio_salsa_default ?? 236;
@@ -249,14 +252,18 @@ import Layout from '../layouts/Layout.astro';
         });
         costoUnit = calcCostoReceta(ings, receta.precio_prepizza, receta.precio_salsa);
       }
-      const precioVenta = calcPrecioEfectivo(costoUnit, item.markup);
+      const cat = CATEGORIAS.includes(item.subcategoria) ? item.subcategoria : 'Otros';
+      const costoOpUnit = cat === 'Empanadas' ? costoOpPorPizza / 12 : costoOpPorPizza;
+      const costoReal = calcCostoRealTotal(costoUnit, costoOpUnit);
+      const precioVenta = calcPrecioEfectivo(costoReal, item.markup);
       const unidades = unidadesPorProducto.get(item.id) ?? 0;
 
       productosVenta.push({
         id: item.id,
         nombre: item.nombre,
-        subcategoria: CATEGORIAS.includes(item.subcategoria) ? item.subcategoria : 'Otros',
+        subcategoria: cat,
         costoUnit,
+        costoReal,
         precioVenta,
         markup: item.markup,
         unidades,
