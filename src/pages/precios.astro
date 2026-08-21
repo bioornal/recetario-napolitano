@@ -76,7 +76,7 @@ import Layout from '../layouts/Layout.astro';
   let _syncInitialized = false;
   let _huerfanasGuard: { id: string; nombre: string }[] = [];
 
-  const CATEGORIAS = ['Pizzas', 'Calzones', 'Empanadas', 'Hamburguesas', 'Lomos', 'Otros'] as const;
+  const CATEGORIAS = ['Pizzas', 'Calzones', 'Empanadas', 'Hamburguesas', 'Lomos', 'Bebidas', 'Otros'] as const;
 
   async function init() {
     const [{ data: fijos }, { data: variables }, { data: gastosRows }, { data: config }] = await Promise.all([
@@ -153,7 +153,7 @@ import Layout from '../layouts/Layout.astro';
           costoIng = costoReceta;
         }
       }
-      const costoOpUnit = cat === 'Empanadas' ? Math.round(costoOpPorPizza / 12) : costoOpPorPizza;
+      const costoOpUnit = cat === 'Empanadas' ? Math.round(costoOpPorPizza / 12) : cat === 'Bebidas' ? 0 : costoOpPorPizza;
       const costoReal = calcCostoRealTotal(costoIng, costoOpUnit);
       const markup = Number(item.markup) || 1;
       const precioEfectivo = calcPrecioEfectivo(costoReal, markup);

@@ -9,7 +9,7 @@ export function escapeHtml(str: unknown): string {
     .replace(/'/g, '&#39;');
 }
 
-export const TIPOS = ['Quesos', 'Carnes', 'Fiambres', 'Verduras y Frutas', 'Harinas y Masas', 'Salsas y Condimentos', 'Varios'] as const;
+export const TIPOS = ['Quesos', 'Carnes', 'Fiambres', 'Verduras y Frutas', 'Harinas y Masas', 'Salsas y Condimentos', 'Bebidas', 'Varios'] as const;
 export type Tipo = typeof TIPOS[number];
 
 export function showDbError(err?: unknown) {

@@ -111,7 +111,7 @@ import Layout from '../layouts/Layout.astro';
             costoIng = costoReceta;
           }
         }
-        const costoOpUnit = p.subcategoria === 'Empanadas' ? Math.round(costoOpPorPizza / 12) : costoOpPorPizza;
+        const costoOpUnit = p.subcategoria === 'Empanadas' ? Math.round(costoOpPorPizza / 12) : p.subcategoria === 'Bebidas' ? 0 : costoOpPorPizza;
         const costoReal = calcCostoRealTotal(costoIng, costoOpUnit);
         const precioEfectivo = calcPrecioEfectivo(costoReal, Number(p.markup) || 1);
         const margen = costoReal > 0 ? Math.round(((precioEfectivo - costoReal) / precioEfectivo) * 100) : 0;

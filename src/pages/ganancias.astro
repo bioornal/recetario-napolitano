@@ -282,7 +282,7 @@ import Layout from '../layouts/Layout.astro';
   let _filtroCanal: 'todos' | 'Impasto' | 'carroFogon' = 'todos';
   let _busquedaPedidos = '';
 
-  const CATEGORIAS = ['Pizzas', 'Calzones', 'Empanadas', 'Hamburguesas', 'Lomos', 'Otros'] as const;
+  const CATEGORIAS = ['Pizzas', 'Calzones', 'Empanadas', 'Hamburguesas', 'Lomos', 'Bebidas', 'Otros'] as const;
 
   function getMonthStr(d: Date) {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -472,7 +472,7 @@ import Layout from '../layouts/Layout.astro';
         }
       }
       const cat = CATEGORIAS.includes(item.subcategoria) ? item.subcategoria : 'Otros';
-      const costoOpUnit = cat === 'Empanadas' ? Math.round(costoOpPorPizza / 12) : costoOpPorPizza;
+      const costoOpUnit = cat === 'Empanadas' ? Math.round(costoOpPorPizza / 12) : cat === 'Bebidas' ? 0 : costoOpPorPizza;
       const costoReal = calcCostoRealTotal(costoUnit, costoOpUnit);
       const precioVenta = calcPrecioEfectivo(costoReal, Number(item.markup) || 1);
 
