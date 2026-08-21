@@ -217,13 +217,16 @@ import Layout from '../layouts/Layout.astro';
       loadOrEmpty('gastos', () => db.from('gastos').select('*').gte('fecha', `${mesActual}-01`).lt('fecha', getNextMonth(mesActual)).order('fecha', { ascending: false })),
     ]);
 
-    // ─── Cargar unidades desde CarroFogon (pedidos) ───
+    // ─── Cargar unidades desde pedidos (Impasto / CarroFogon) ───
     const unidadesFogon = new Map<string, number>(); // precio_venta_id → cantidad
     for (const ped of (pedidos ?? [])) {
+      if (ped.status === 'cancelado' || ped.estado === 'cancelado') continue;
       const prods = typeof ped.productos === 'string' ? JSON.parse(ped.productos) : (ped.productos ?? []);
       for (const p of prods) {
-        const key = normalizarNombre(p.nombre ?? '');
-        if (key) unidadesFogon.set(key, (unidadesFogon.get(key) ?? 0) + (p.cantidad ?? 1));
+        const name = p.nombre || p.name || '';
+        const qty = Number(p.cantidad ?? p.qty ?? 1);
+        const key = normalizarNombre(name);
+        if (key) unidadesFogon.set(key, (unidadesFogon.get(key) ?? 0) + qty);
       }
     }
 
