@@ -225,6 +225,7 @@ import Layout from '../layouts/Layout.astro';
   let precioSalsaDefault = 236;
   let recetasPorCategoria: Map<string, string[]> = new Map();
 
+  let gastosTotal = 0;
   let diasLaborablesMes = parseInt(typeof localStorage !== 'undefined' ? (localStorage.getItem('impasto_dias_laborables') || '26') : '26');
   if (isNaN(diasLaborablesMes) || diasLaborablesMes <= 0 || diasLaborablesMes > 31) diasLaborablesMes = 26;
 
