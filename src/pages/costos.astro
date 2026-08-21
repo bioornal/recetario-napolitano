@@ -59,10 +59,10 @@ import Layout from '../layouts/Layout.astro';
     </div>
   </div>
 
-  <!-- Resumen + pizzas objetivo -->
-  <div class="glass-panel rounded-2xl p-5">
-    <h2 class="text-xs uppercase tracking-wider text-accent-amber font-bold mb-4">Resumen Mensual</h2>
-    <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+  <!-- Resumen + pizzas objetivo y ritmo diario -->
+  <div class="glass-panel rounded-2xl p-5 mb-6">
+    <h2 class="text-xs uppercase tracking-wider text-accent-amber font-bold mb-4">Resumen Mensual y Estructura Operativa</h2>
+    <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
       <div>
         <p class="text-[0.65rem] text-text-muted uppercase tracking-wider">Total Fijos</p>
         <p class="text-xl font-bold text-purple-400" id="sum-fijos">$0</p>
@@ -84,11 +84,83 @@ import Layout from '../layouts/Layout.astro';
         <p class="text-xl font-bold text-accent-gold" id="costo-por-pizza">$0</p>
       </div>
     </div>
-    <div class="mt-4 flex items-center gap-3 flex-wrap">
-      <label class="text-xs text-text-muted uppercase tracking-wider">Pizzas objetivo / mes:</label>
-      <input type="number" id="inp-pizzas-mes" value="800" min="1"
-        class="w-24 bg-dark-surface border border-dark-border rounded-xl px-3 py-1.5 text-text-main text-sm focus:ring-2 focus:ring-accent-amber/50 outline-none">
-      <button id="btn-guardar-pizzas" class="bg-accent-amber text-dark-bg text-xs font-bold px-3 py-1.5 rounded-xl hover:bg-accent-gold transition-all">Guardar</button>
+
+    <!-- Panel de Planificación de Ventas y Ritmo Diario -->
+    <div class="bg-dark-surface/50 border border-dark-border/40 rounded-xl p-4">
+      <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+        <div>
+          <h3 class="text-sm font-bold text-text-main flex items-center gap-2">
+            <span>🎯 Planificación y Ritmo de Ventas Requerido</span>
+          </h3>
+          <p class="text-[0.65rem] text-text-muted mt-0.5">
+            Equivalencia de costos: <span class="text-accent-gold font-semibold">1 Pizza = 1 Docena de Empanadas (12 un.) = 1 unidad operativa</span>
+          </p>
+        </div>
+        <div class="flex items-center gap-3 flex-wrap">
+          <div class="flex items-center gap-2">
+            <label class="text-xs text-text-muted">Objetivo / mes:</label>
+            <input type="number" id="inp-pizzas-mes" value="800" min="1" step="10"
+              class="w-20 bg-dark-bg border border-dark-border rounded-lg px-2.5 py-1 text-right text-text-main text-xs font-mono focus:ring-1 focus:ring-accent-amber/50 outline-none">
+            <span class="text-xs text-text-muted">un.</span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <label class="text-xs text-text-muted">Días trabajados:</label>
+            <input type="number" id="inp-dias-mes" value="26" min="1" max="31" step="1"
+              class="w-16 bg-dark-bg border border-dark-border rounded-lg px-2 py-1 text-right text-text-main text-xs font-mono focus:ring-1 focus:ring-accent-amber/50 outline-none">
+            <span class="text-xs text-text-muted">días/mes</span>
+          </div>
+
+          <button id="btn-guardar-pizzas" class="bg-accent-amber text-dark-bg text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-accent-gold transition-all">Guardar</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <!-- Meta Diaria -->
+        <div class="bg-dark-bg/60 border border-emerald-500/30 rounded-xl p-3.5 flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-xs uppercase tracking-wider text-emerald-400 font-bold">Meta por Día Trabajado</span>
+            <span class="text-lg">📅</span>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <span class="text-2xl font-bold font-mono text-emerald-400" id="ritmo-diario-unidades">31</span>
+            <span class="text-xs text-text-muted">unidades / día</span>
+          </div>
+          <p class="text-[0.65rem] text-text-muted mt-1.5 pt-1 border-t border-emerald-500/10" id="ritmo-diario-detalle">
+            31 pizzas ó 31 docenas (372 empanadas)
+          </p>
+        </div>
+
+        <!-- Meta Semanal -->
+        <div class="bg-dark-bg/60 border border-purple-500/30 rounded-xl p-3.5 flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-xs uppercase tracking-wider text-purple-400 font-bold">Meta por Semana</span>
+            <span class="text-lg">📆</span>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <span class="text-2xl font-bold font-mono text-purple-300" id="ritmo-semanal-unidades">185</span>
+            <span class="text-xs text-text-muted">unidades / semana</span>
+          </div>
+          <p class="text-[0.65rem] text-text-muted mt-1.5 pt-1 border-t border-purple-500/10" id="ritmo-semanal-detalle">
+            185 pizzas ó 185 docenas de empanadas
+          </p>
+        </div>
+
+        <!-- Días de Descanso -->
+        <div class="bg-dark-bg/60 border border-dark-border/60 rounded-xl p-3.5 flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-xs uppercase tracking-wider text-text-muted font-bold">Días no trabajados (Descanso)</span>
+            <span class="text-lg">🏖️</span>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <span class="text-2xl font-bold font-mono text-amber-400" id="dias-descanso-count">4</span>
+            <span class="text-xs text-text-muted">días libres / mes</span>
+          </div>
+          <p class="text-[0.65rem] text-text-muted mt-1.5 pt-1 border-t border-dark-border/30" id="dias-descanso-detalle">
+            Calculado sobre 30 días del mes (1 día libre/sem.)
+          </p>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -153,7 +225,8 @@ import Layout from '../layouts/Layout.astro';
   let precioSalsaDefault = 236;
   let recetasPorCategoria: Map<string, string[]> = new Map();
 
-  let gastosTotal = 0;
+  let diasLaborablesMes = parseInt(typeof localStorage !== 'undefined' ? (localStorage.getItem('impasto_dias_laborables') || '26') : '26');
+  if (isNaN(diasLaborablesMes) || diasLaborablesMes <= 0 || diasLaborablesMes > 31) diasLaborablesMes = 26;
 
   function recalcular() {
     const tf = parseFloat((document.getElementById('total-fijos') as HTMLElement).dataset.raw ?? '0');
@@ -164,6 +237,27 @@ import Layout from '../layouts/Layout.astro';
     document.getElementById('sum-gastos')!.textContent = fmt(gastosTotal);
     document.getElementById('sum-total')!.textContent = fmt(total);
     document.getElementById('costo-por-pizza')!.textContent = fmt(calcCostoOperativoPorPizza(total, pizzasMes));
+
+    // ─── Ritmo de Ventas y Días Laborables ───
+    const dias = diasLaborablesMes > 0 ? diasLaborablesMes : 26;
+    const metaDiaria = Math.ceil(pizzasMes / dias);
+    const metaSemanal = Math.ceil(pizzasMes / (dias / 6));
+    const descanso = Math.max(0, 30 - dias);
+
+    const diarioEl = document.getElementById('ritmo-diario-unidades');
+    if (diarioEl) diarioEl.textContent = String(metaDiaria);
+    const diarioDetEl = document.getElementById('ritmo-diario-detalle');
+    if (diarioDetEl) diarioDetEl.textContent = `${metaDiaria} pizzas ó ${metaDiaria} docenas (${metaDiaria * 12} empanadas)`;
+
+    const semEl = document.getElementById('ritmo-semanal-unidades');
+    if (semEl) semEl.textContent = String(metaSemanal);
+    const semDetEl = document.getElementById('ritmo-semanal-detalle');
+    if (semDetEl) semDetEl.textContent = `${metaSemanal} pizzas ó ${metaSemanal} docenas de empanadas`;
+
+    const descEl = document.getElementById('dias-descanso-count');
+    if (descEl) descEl.textContent = String(descanso);
+    const descDetEl = document.getElementById('dias-descanso-detalle');
+    if (descDetEl) descDetEl.textContent = `Descanso: ${descanso} días libres al mes (${dias} días abiertos)`;
   }
 
   async function renderFijos() {
@@ -283,10 +377,24 @@ import Layout from '../layouts/Layout.astro';
     renderVariables();
   });
 
+  document.getElementById('inp-dias-mes')?.addEventListener('input', (e) => {
+    diasLaborablesMes = parseInt((e.target as HTMLInputElement).value) || 26;
+    if (typeof localStorage !== 'undefined') localStorage.setItem('impasto_dias_laborables', String(diasLaborablesMes));
+    recalcular();
+  });
+
+  document.getElementById('inp-pizzas-mes')?.addEventListener('input', (e) => {
+    pizzasMes = parseInt((e.target as HTMLInputElement).value) || 800;
+    recalcular();
+  });
+
   document.getElementById('btn-guardar-pizzas')!.addEventListener('click', async () => {
-    pizzasMes = parseInt((document.getElementById('inp-pizzas-mes') as HTMLInputElement).value);
+    pizzasMes = parseInt((document.getElementById('inp-pizzas-mes') as HTMLInputElement).value) || 800;
+    diasLaborablesMes = parseInt((document.getElementById('inp-dias-mes') as HTMLInputElement).value) || 26;
+    if (typeof localStorage !== 'undefined') localStorage.setItem('impasto_dias_laborables', String(diasLaborablesMes));
     if (configId) await dbWrite(() => db.from('config_negocio').update({ pizzas_objetivo_mes: pizzasMes }).eq('id', configId).select());
     recalcular();
+    alert('Objetivo de ventas y días laborables guardados ✓');
   });
 
   // ─── Prepizza & Salsa Calculator ───
@@ -457,6 +565,7 @@ import Layout from '../layouts/Layout.astro';
     precioPrepizzaDefault = config?.[0]?.precio_prepizza_default ?? 485;
     precioSalsaDefault = config?.[0]?.precio_salsa_default ?? 236;
     (document.getElementById('inp-pizzas-mes') as HTMLInputElement).value = String(pizzasMes);
+    (document.getElementById('inp-dias-mes') as HTMLInputElement).value = String(diasLaborablesMes);
     document.getElementById('ctx-prepizza')!.textContent = fmt(precioPrepizzaDefault);
     document.getElementById('ctx-salsa')!.textContent = fmt(precioSalsaDefault);
 
