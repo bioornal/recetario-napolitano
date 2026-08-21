@@ -30,7 +30,7 @@ export function calcCostoRealTotal(costoIngredientes: number, costoOperativoPorP
 }
 
 export function calcPrecioEfectivo(costoRealTotal: number, markup: number): number {
-  return Math.ceil((costoRealTotal * markup) / 1000) * 1000;
+  return Math.round(costoRealTotal * markup);
 }
 
 export function calcCostoReceta(

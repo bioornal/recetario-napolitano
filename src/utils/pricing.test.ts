@@ -25,14 +25,11 @@ describe('calcCostoRealTotal', () => {
 });
 
 describe('calcPrecioEfectivo', () => {
-  test('aplica markup al costo real total y redondea al mil superior', () => {
-    // 5270 * 1.6 = 8432 -> 9000
-    expect(calcPrecioEfectivo(5270, 1.6)).toBe(9000);
+  test('aplica markup al costo real total', () => {
+    expect(calcPrecioEfectivo(5270, 1.6)).toBe(8432);
   });
-  test('redondea hacia el mil más próximo hacia arriba', () => {
-    expect(calcPrecioEfectivo(14975, 1)).toBe(15000);
-    expect(calcPrecioEfectivo(1000, 1.333)).toBe(2000);
-    expect(calcPrecioEfectivo(15000, 1)).toBe(15000);
+  test('redondea al entero más cercano', () => {
+    expect(calcPrecioEfectivo(1000, 1.333)).toBe(1333);
   });
 });
 
