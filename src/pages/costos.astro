@@ -62,7 +62,7 @@ import Layout from '../layouts/Layout.astro';
   <!-- Resumen + pizzas objetivo -->
   <div class="glass-panel rounded-2xl p-5">
     <h2 class="text-xs uppercase tracking-wider text-accent-amber font-bold mb-4">Resumen Mensual</h2>
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
       <div>
         <p class="text-[0.65rem] text-text-muted uppercase tracking-wider">Total Fijos</p>
         <p class="text-xl font-bold text-purple-400" id="sum-fijos">$0</p>
@@ -70,6 +70,10 @@ import Layout from '../layouts/Layout.astro';
       <div>
         <p class="text-[0.65rem] text-text-muted uppercase tracking-wider">Total Variables</p>
         <p class="text-xl font-bold text-purple-400" id="sum-variables">$0</p>
+      </div>
+      <div>
+        <p class="text-[0.65rem] text-text-muted uppercase tracking-wider">Total Gastos</p>
+        <p class="text-xl font-bold text-purple-400" id="sum-gastos">$0</p>
       </div>
       <div>
         <p class="text-[0.65rem] text-text-muted uppercase tracking-wider">Total Operativo Mes</p>
@@ -149,12 +153,15 @@ import Layout from '../layouts/Layout.astro';
   let precioSalsaDefault = 236;
   let recetasPorCategoria: Map<string, string[]> = new Map();
 
+  let gastosTotal = 0;
+
   function recalcular() {
     const tf = parseFloat((document.getElementById('total-fijos') as HTMLElement).dataset.raw ?? '0');
     const tv = parseFloat((document.getElementById('total-variables') as HTMLElement).dataset.raw ?? '0');
-    const total = tf + tv;
+    const total = tf + tv + gastosTotal;
     document.getElementById('sum-fijos')!.textContent = fmt(tf);
     document.getElementById('sum-variables')!.textContent = fmt(tv);
+    document.getElementById('sum-gastos')!.textContent = fmt(gastosTotal);
     document.getElementById('sum-total')!.textContent = fmt(total);
     document.getElementById('costo-por-pizza')!.textContent = fmt(calcCostoOperativoPorPizza(total, pizzasMes));
   }
@@ -251,6 +258,12 @@ import Layout from '../layouts/Layout.astro';
         renderVariables();
       });
     });
+    recalcular();
+  }
+
+  async function cargarGastos() {
+    const { data } = await db.from('gastos').select('monto');
+    gastosTotal = (data ?? []).reduce((a: number, b: any) => a + b.monto, 0);
     recalcular();
   }
 
@@ -450,7 +463,7 @@ import Layout from '../layouts/Layout.astro';
     const { data: ings } = await db.from('ingredientes').select('*').order('nombre', { ascending: true });
     ingredientesGlobalesCostos = ings ?? [];
 
-    await Promise.all([renderFijos(), renderVariables(), cargarCategoriasYRecetas()]);
+    await Promise.all([renderFijos(), renderVariables(), cargarCategoriasYRecetas(), cargarGastos()]);
   }
 
   init().catch(showDbError);

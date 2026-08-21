@@ -79,15 +79,17 @@ import Layout from '../layouts/Layout.astro';
   const CATEGORIAS = ['Pizzas', 'Calzones', 'Empanadas', 'Hamburguesas', 'Lomos', 'Otros'] as const;
 
   async function init() {
-    const [{ data: fijos }, { data: variables }, { data: config }] = await Promise.all([
+    const [{ data: fijos }, { data: variables }, { data: gastosRows }, { data: config }] = await Promise.all([
       db.from('costos_fijos').select('monto').eq('activo', true),
       db.from('costos_variables').select('monto_referencia'),
+      db.from('gastos').select('monto'),
       db.from('config_negocio').select('pizzas_objetivo_mes').limit(1),
     ]);
 
     const totalOp = [
       ...(fijos ?? []).map((c: any) => c.monto),
       ...(variables ?? []).map((c: any) => c.monto_referencia),
+      ...(gastosRows ?? []).map((g: any) => g.monto),
     ].reduce((a: number, b: number) => a + b, 0);
 
     const pizzasMes = config?.[0]?.pizzas_objetivo_mes ?? 800;

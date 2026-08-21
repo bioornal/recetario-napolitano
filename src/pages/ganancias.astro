@@ -233,10 +233,11 @@ import Layout from '../layouts/Layout.astro';
       unidadesManual.set(v.precio_venta_id, v.unidades);
     }
 
-    // Costo operativo total
+    // Costo operativo total (incluye gastos del mes)
     totalOp = [
       ...(fijos ?? []).map((c: any) => c.monto),
       ...(variables ?? []).map((c: any) => c.monto_referencia),
+      ...(gastosRows ?? []).map((g: any) => g.monto),
     ].reduce((a: number, b: number) => a + b, 0);
     const pizzasMes = config?.[0]?.pizzas_objetivo_mes ?? 800;
     costoOpPorPizza = calcCostoOperativoPorPizza(totalOp, pizzasMes);
