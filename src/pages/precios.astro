@@ -86,13 +86,12 @@ import Layout from '../layouts/Layout.astro';
       db.from('config_negocio').select('pizzas_objetivo_mes').limit(1),
     ]);
 
-    const totalOp = [
-      ...(fijos ?? []).map((c: any) => c.monto),
-      ...(variables ?? []).map((c: any) => c.monto_referencia),
-      ...(gastosRows ?? []).map((g: any) => g.monto),
-    ].reduce((a: number, b: number) => a + b, 0);
+    const totalFijos = (fijos ?? []).reduce((acc: number, c: any) => acc + (Number(c?.monto) || 0), 0);
+    const totalVariables = (variables ?? []).reduce((acc: number, c: any) => acc + (Number(c?.monto_referencia) || 0), 0);
+    const totalGastos = (gastosRows ?? []).reduce((acc: number, g: any) => acc + (Number(g?.monto) || 0), 0);
+    const totalOp = totalFijos + totalVariables + totalGastos;
 
-    const pizzasMes = config?.[0]?.pizzas_objetivo_mes ?? 800;
+    const pizzasMes = Number(config?.[0]?.pizzas_objetivo_mes) || 800;
     costoOpPorPizza = calcCostoOperativoPorPizza(totalOp, pizzasMes);
 
     document.getElementById('ctx-total-op')!.textContent = fmt(totalOp);
@@ -111,7 +110,7 @@ import Layout from '../layouts/Layout.astro';
       { data: ingredientes },
     ] = await Promise.all([
       db.from('precios_venta').select('*').order('nombre', { ascending: true }),
-       db.from('recetas').select('id, nombre, precio_prepizza, precio_salsa'),
+      db.from('recetas').select('id, nombre, precio_prepizza, precio_salsa, rend_tipo, rend_valor'),
       db.from('receta_ingredientes').select('*'),
       db.from('ingredientes').select('id, precio_kg, multiplo_rendimiento'),
     ]);
@@ -136,21 +135,28 @@ import Layout from '../layouts/Layout.astro';
           const ing = ingMap.get(ri.ingrediente_id);
           return {
             precio_kg: Number(ing?.precio_kg ?? 0),
-            cantidad_kg: Number(ri.cantidad_kg),
+            cantidad_kg: Number(ri.cantidad_kg ?? 0),
             multiplo_rendimiento: Number(ing?.multiplo_rendimiento ?? 1),
           };
         });
-        const costoReceta = calcCostoReceta(ings, receta.precio_prepizza, receta.precio_salsa);
-        if (cat === 'Empanadas') {
-          const unidades = calcUnidadesReceta(ings);
+        const prepizza = Number(receta.precio_prepizza ?? 0);
+        const salsa = Number(receta.precio_salsa ?? 0);
+        const costoReceta = calcCostoReceta(ings, prepizza, salsa);
+
+        if (cat === 'Empanadas' || receta.rend_tipo === 'peso') {
+          const gramosPorUnidad = Number(receta.rend_valor) || 65;
+          const unidades = calcUnidadesReceta(ings, gramosPorUnidad);
           costoIng = unidades > 0 ? costoReceta / unidades : costoReceta;
+        } else if (receta.rend_tipo === 'directo' && Number(receta.rend_valor) > 1) {
+          costoIng = costoReceta / Number(receta.rend_valor);
         } else {
           costoIng = costoReceta;
         }
       }
-      const costoOpUnit = cat === 'Empanadas' ? costoOpPorPizza / 12 : costoOpPorPizza;
+      const costoOpUnit = cat === 'Empanadas' ? Math.round(costoOpPorPizza / 12) : costoOpPorPizza;
       const costoReal = calcCostoRealTotal(costoIng, costoOpUnit);
-      const precioEfectivo = calcPrecioEfectivo(costoReal, item.markup);
+      const markup = Number(item.markup) || 1;
+      const precioEfectivo = calcPrecioEfectivo(costoReal, markup);
       porCategoria.get(cat)!.push({ item, costoIng, costoOpUnit, costoReal, precioEfectivo });
     }
 
@@ -230,9 +236,9 @@ import Layout from '../layouts/Layout.astro';
       lista.innerHTML = huerfanas.map((r: any) => {
         const ings = (riByReceta.get(r.id) ?? []).map((ri: any) => {
           const ing = ingMap.get(ri.ingrediente_id);
-          return { precio_kg: Number(ing?.precio_kg ?? 0), cantidad_kg: Number(ri.cantidad_kg), multiplo_rendimiento: Number(ing?.multiplo_rendimiento ?? 1) };
+          return { precio_kg: Number(ing?.precio_kg ?? 0), cantidad_kg: Number(ri.cantidad_kg ?? 0), multiplo_rendimiento: Number(ing?.multiplo_rendimiento ?? 1) };
         });
-        const costo = calcCostoReceta(ings, r.precio_prepizza, r.precio_salsa);
+        const costo = calcCostoReceta(ings, Number(r.precio_prepizza ?? 0), Number(r.precio_salsa ?? 0));
         return `<div class="flex items-center justify-between py-2 border-b border-dark-border/20">
           <div>
             <span class="text-text-main text-sm font-medium">${escapeHtml(r.nombre)}</span>
@@ -278,10 +284,12 @@ import Layout from '../layouts/Layout.astro';
       inp.addEventListener('change', async (e) => {
         const el = e.target as HTMLInputElement;
         const margen = parseFloat(el.value);
+        if (isNaN(margen) || margen <= 0 || margen >= 100) return;
         const newMarkup = margenToMarkup(margen);
         await dbWrite(() => db.from('precios_venta').update({ markup: newMarkup }).eq('id', el.dataset.id!).select());
         const row = el.closest('tr') as HTMLElement;
-        row.querySelector('.precio-efectivo')!.textContent = fmt(calcPrecioEfectivo(parseFloat(row.dataset.costoReal!), newMarkup));
+        const costoReal = parseFloat(row.dataset.costoReal || '0');
+        row.querySelector('.precio-efectivo')!.textContent = fmt(calcPrecioEfectivo(costoReal, newMarkup));
         applyMargenStyle(el, margen);
         syncGrupoInput(row.dataset.grupo!);
       });
@@ -299,7 +307,8 @@ import Layout from '../layouts/Layout.astro';
         const ids = Array.from(itemRows).map(r => r.dataset.id!);
         await dbWrite(() => db.from('precios_venta').update({ markup: newMarkup }).in('id', ids).select());
         itemRows.forEach(row => {
-          row.querySelector('.precio-efectivo')!.textContent = fmt(calcPrecioEfectivo(parseFloat(row.dataset.costoReal!), newMarkup));
+          const costoReal = parseFloat(row.dataset.costoReal || '0');
+          row.querySelector('.precio-efectivo')!.textContent = fmt(calcPrecioEfectivo(costoReal, newMarkup));
           const inp = row.querySelector('.markup-input') as HTMLInputElement;
           inp.value = String(margen);
           applyMargenStyle(inp, margen);

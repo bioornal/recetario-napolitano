@@ -206,7 +206,7 @@ import Layout from '../layouts/Layout.astro';
       { data: gastosRows },
     ] = await Promise.all([
       db.from('precios_venta').select('*').order('nombre', { ascending: true }),
-      db.from('recetas').select('id, nombre, precio_prepizza, precio_salsa'),
+      db.from('recetas').select('id, nombre, precio_prepizza, precio_salsa, rend_tipo, rend_valor'),
       db.from('receta_ingredientes').select('*'),
       db.from('ingredientes').select('id, precio_kg, multiplo_rendimiento'),
       loadOrEmpty('pedidos', () => db.from('pedidos').select('productos').gte('fecha', `${mesActual}-01`).lt('fecha', getNextMonth(mesActual))),
@@ -234,16 +234,15 @@ import Layout from '../layouts/Layout.astro';
     }
 
     // Costo operativo total (incluye gastos del mes)
-    totalOp = [
-      ...(fijos ?? []).map((c: any) => c.monto),
-      ...(variables ?? []).map((c: any) => c.monto_referencia),
-      ...(gastosRows ?? []).map((g: any) => g.monto),
-    ].reduce((a: number, b: number) => a + b, 0);
-    const pizzasMes = config?.[0]?.pizzas_objetivo_mes ?? 800;
+    const totalFijos = (fijos ?? []).reduce((acc: number, c: any) => acc + (Number(c?.monto) || 0), 0);
+    const totalVariables = (variables ?? []).reduce((acc: number, c: any) => acc + (Number(c?.monto_referencia) || 0), 0);
+    const totalGastos = (gastosRows ?? []).reduce((acc: number, g: any) => acc + (Number(g?.monto) || 0), 0);
+    totalOp = totalFijos + totalVariables + totalGastos;
+    const pizzasMes = Number(config?.[0]?.pizzas_objetivo_mes) || 800;
     costoOpPorPizza = calcCostoOperativoPorPizza(totalOp, pizzasMes);
 
-    precioPrepizzaGlobal = config?.[0]?.precio_prepizza_default ?? 485;
-    precioSalsaGlobal = config?.[0]?.precio_salsa_default ?? 236;
+    precioPrepizzaGlobal = Number(config?.[0]?.precio_prepizza_default) || 485;
+    precioSalsaGlobal = Number(config?.[0]?.precio_salsa_default) || 236;
 
     // Mapas
     const recetasMap = new Map((recetas ?? []).map((r: any) => [r.id, r]));
@@ -270,16 +269,30 @@ import Layout from '../layouts/Layout.astro';
           const ing = ingMap.get(ri.ingrediente_id);
           return {
             precio_kg: Number(ing?.precio_kg ?? 0),
-            cantidad_kg: Number(ri.cantidad_kg),
+            cantidad_kg: Number(ri.cantidad_kg ?? 0),
             multiplo_rendimiento: Number(ing?.multiplo_rendimiento ?? 1),
           };
         });
-        costoUnit = calcCostoReceta(ings, receta.precio_prepizza, receta.precio_salsa);
+        const prepizza = Number(receta.precio_prepizza ?? 0);
+        const salsa = Number(receta.precio_salsa ?? 0);
+        const costoReceta = calcCostoReceta(ings, prepizza, salsa);
+
+        const cat = CATEGORIAS.includes(item.subcategoria) ? item.subcategoria : 'Otros';
+        if (cat === 'Empanadas' || receta.rend_tipo === 'peso') {
+          const gramosPorUnidad = Number(receta.rend_valor) || 65;
+          const totalNeta = ings.reduce((acc: number, ing: any) => acc + ing.cantidad_kg, 0);
+          const unidades = Math.floor((totalNeta * 1000) / gramosPorUnidad);
+          costoUnit = unidades > 0 ? costoReceta / unidades : costoReceta;
+        } else if (receta.rend_tipo === 'directo' && Number(receta.rend_valor) > 1) {
+          costoUnit = costoReceta / Number(receta.rend_valor);
+        } else {
+          costoUnit = costoReceta;
+        }
       }
       const cat = CATEGORIAS.includes(item.subcategoria) ? item.subcategoria : 'Otros';
-      const costoOpUnit = cat === 'Empanadas' ? costoOpPorPizza / 12 : costoOpPorPizza;
+      const costoOpUnit = cat === 'Empanadas' ? Math.round(costoOpPorPizza / 12) : costoOpPorPizza;
       const costoReal = calcCostoRealTotal(costoUnit, costoOpUnit);
-      const precioVenta = calcPrecioEfectivo(costoReal, item.markup);
+      const precioVenta = calcPrecioEfectivo(costoReal, Number(item.markup) || 1);
 
       // Unidades: manual (ventas_mes) > automático (pedidos carroFogon) > 0
       let unidades = unidadesManual.get(item.id);

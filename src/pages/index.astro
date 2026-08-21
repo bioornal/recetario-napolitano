@@ -63,19 +63,20 @@ import Layout from '../layouts/Layout.astro';
 
   async function loadMetricas() {
     const db = insforge.database;
-    const [recetas, costosFijos, costosVar, config] = await Promise.all([
+    const [recetas, costosFijos, costosVar, gastos, config] = await Promise.all([
       db.from('recetas').select('id'),
       db.from('costos_fijos').select('monto').eq('activo', true),
       db.from('costos_variables').select('monto_referencia'),
+      db.from('gastos').select('monto'),
       db.from('config_negocio').select('pizzas_objetivo_mes').limit(1),
     ]);
 
-    const totalOp = [
-      ...(costosFijos.data ?? []).map((c: any) => c.monto),
-      ...(costosVar.data ?? []).map((c: any) => c.monto_referencia),
-    ].reduce((a: number, b: number) => a + b, 0);
+    const totalFijos = (costosFijos.data ?? []).reduce((acc: number, c: any) => acc + (Number(c?.monto) || 0), 0);
+    const totalVar = (costosVar.data ?? []).reduce((acc: number, c: any) => acc + (Number(c?.monto_referencia) || 0), 0);
+    const totalGastos = (gastos.data ?? []).reduce((acc: number, g: any) => acc + (Number(g?.monto) || 0), 0);
+    const totalOp = totalFijos + totalVar + totalGastos;
 
-    const pizzasMes = config.data?.[0]?.pizzas_objetivo_mes ?? 800;
+    const pizzasMes = Number(config.data?.[0]?.pizzas_objetivo_mes) || 800;
     const costoPorPizza = calcCostoOperativoPorPizza(totalOp, pizzasMes);
 
     document.getElementById('m-costo-pizza')!.textContent = fmt(costoPorPizza);
