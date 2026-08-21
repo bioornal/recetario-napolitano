@@ -42,10 +42,101 @@ import Layout from '../layouts/Layout.astro';
     </div>
   </div>
 
+  <!-- Desglose por Canal de Venta -->
+  <div class="glass-panel rounded-2xl p-4 mb-4">
+    <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+      <h2 class="text-xs uppercase tracking-wider text-accent-gold font-bold flex items-center gap-1.5">
+        <span>🌐 Canales de Venta del Mes</span>
+      </h2>
+      <span class="text-[0.65rem] text-text-muted">Consolidación en tiempo real</span>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <!-- Impasto Card -->
+      <div class="bg-dark-bg/60 border border-orange-500/30 rounded-xl p-3.5 flex flex-col justify-between">
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="text-orange-400 font-bold text-xs flex items-center gap-1.5">
+            <span class="text-sm">🍕</span> Impasto <span class="text-[0.6rem] px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-300 font-semibold">Web</span>
+          </span>
+          <span class="text-xs font-mono text-orange-400 font-bold" id="chan-impasto-pedidos">0 pedidos</span>
+        </div>
+        <div class="flex items-baseline justify-between mt-1 pt-1 border-t border-orange-500/10">
+          <span class="text-text-muted text-[0.65rem]"><span id="chan-impasto-units" class="text-orange-400 font-semibold">0</span> un. vendidas</span>
+          <span class="font-bold text-sm text-text-main font-mono" id="chan-impasto-fact">$0</span>
+        </div>
+      </div>
+
+      <!-- carroFogon Card -->
+      <div class="bg-dark-bg/60 border border-emerald-500/30 rounded-xl p-3.5 flex flex-col justify-between">
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="text-emerald-400 font-bold text-xs flex items-center gap-1.5">
+            <span class="text-sm">📲</span> carroFogon <span class="text-[0.6rem] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-semibold">WhatsApp / Manual</span>
+          </span>
+          <span class="text-xs font-mono text-emerald-400 font-bold" id="chan-fogon-pedidos">0 pedidos</span>
+        </div>
+        <div class="flex items-baseline justify-between mt-1 pt-1 border-t border-emerald-500/10">
+          <span class="text-text-muted text-[0.65rem]"><span id="chan-fogon-units" class="text-emerald-400 font-semibold">0</span> un. vendidas</span>
+          <span class="font-bold text-sm text-text-main font-mono" id="chan-fogon-fact">$0</span>
+        </div>
+      </div>
+
+      <!-- Consolidado Card -->
+      <div class="bg-dark-bg/60 border border-dark-border/60 rounded-xl p-3.5 flex flex-col justify-between">
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="text-text-main font-bold text-xs flex items-center gap-1.5">
+            <span class="text-sm">📊</span> Consolidado Total
+          </span>
+          <span class="text-xs font-mono text-text-main font-bold" id="chan-total-pedidos">0 pedidos</span>
+        </div>
+        <div class="flex items-baseline justify-between mt-1 pt-1 border-t border-dark-border/30">
+          <span class="text-text-muted text-[0.65rem]"><span id="chan-total-units" class="text-text-main font-semibold">0</span> un. totales</span>
+          <span class="font-bold text-sm text-emerald-400 font-mono" id="chan-total-fact">$0</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Comandas y Pedidos Detallados del Mes -->
+  <div class="glass-panel rounded-2xl overflow-hidden mb-4">
+    <div class="flex items-center justify-between p-4 border-b border-dark-border/50 flex-wrap gap-2">
+      <div class="flex items-center gap-2">
+        <h2 class="text-xs uppercase tracking-wider text-accent-gold font-bold">📋 Comandas del Mes</h2>
+        <span class="text-[0.65rem] text-text-muted" id="badge-pedidos-count">0 pedidos</span>
+      </div>
+      <div class="flex items-center gap-2 flex-wrap">
+        <!-- Filtros de canal -->
+        <div class="flex items-center bg-dark-bg border border-dark-border/60 rounded-lg p-0.5 text-xs">
+          <button class="px-2.5 py-1 rounded font-medium transition-all bg-emerald-500/20 text-emerald-400 btn-filter-canal" data-canal="todos">Todos</button>
+          <button class="px-2.5 py-1 rounded font-medium text-text-muted hover:text-text-main transition-all btn-filter-canal" data-canal="Impasto">🍕 Impasto</button>
+          <button class="px-2.5 py-1 rounded font-medium text-text-muted hover:text-text-main transition-all btn-filter-canal" data-canal="carroFogon">📲 carroFogon</button>
+        </div>
+        <input type="text" id="inp-search-pedidos" placeholder="Buscar cliente, tel, #..." 
+          class="bg-dark-bg border border-dark-border/60 rounded-lg px-2.5 py-1 text-xs text-text-main focus:ring-1 focus:ring-accent-gold outline-none w-36 sm:w-44">
+      </div>
+    </div>
+    <div class="overflow-x-auto max-h-96">
+      <table class="w-full text-xs">
+        <thead class="sticky top-0 bg-dark-card border-b border-dark-border/50 z-10">
+          <tr class="text-text-muted text-[0.65rem] uppercase tracking-wider">
+            <th class="text-left p-3">Origen</th>
+            <th class="text-left p-3"># Pedido</th>
+            <th class="text-left p-3">Fecha</th>
+            <th class="text-left p-3">Cliente</th>
+            <th class="text-left p-3">Detalle Productos</th>
+            <th class="text-right p-3">Total</th>
+            <th class="text-center p-3">Estado</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-pedidos-lista">
+          <tr><td colspan="7" class="p-6 text-center text-text-muted text-xs">Cargando pedidos...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
   <!-- Ventas del mes -->
   <div class="glass-panel rounded-2xl overflow-hidden mb-4">
     <div class="flex items-center justify-between p-4 border-b border-dark-border/50">
-      <h2 class="text-xs uppercase tracking-wider text-accent-gold font-bold">Ventas del mes</h2>
+      <h2 class="text-xs uppercase tracking-wider text-accent-gold font-bold">Ventas por Producto</h2>
       <div class="flex items-center gap-2">
         <button id="btn-cargar-carrofogon" class="text-text-muted text-xs hover:text-text-main transition-all">Recargar datos</button>
         <button id="btn-mostrar-todos" class="text-text-muted text-xs hover:text-text-main transition-all">Mostrar todos</button>
@@ -60,7 +151,7 @@ import Layout from '../layouts/Layout.astro';
             <th class="text-right p-3">Precio</th>
             <th class="text-right p-3">Costo Full</th>
             <th class="text-right p-3">Margen</th>
-            <th class="text-right p-3 w-28">Unidades</th>
+            <th class="text-right p-3 w-32">Unidades</th>
             <th class="text-right p-3">Facturación</th>
             <th class="text-right p-3">Ganancia</th>
           </tr>
@@ -164,6 +255,20 @@ import Layout from '../layouts/Layout.astro';
 
   const db = insforge.database;
 
+  interface PedidoDetalle {
+    id: string;
+    numero: string;
+    canal: 'Impasto' | 'carroFogon';
+    fecha: string;
+    cliente: string;
+    telefono: string;
+    direccion: string;
+    items: Array<{ name: string; qty: number; price: number }>;
+    itemsText: string;
+    total: number;
+    status: string;
+  }
+
   // ─── Estado global ───
   let mesActual = '';
   let totalOp = 0;
@@ -172,9 +277,10 @@ import Layout from '../layouts/Layout.astro';
   let precioSalsaGlobal = 236;
   let productosVenta: any[] = [];
   let gastosData: any[] = [];
+  let pedidosData: PedidoDetalle[] = [];
   let _mostrarTodos = false;
-  let _totalPedidos = 0;
-  let _totalMatcheados = 0;
+  let _filtroCanal: 'todos' | 'Impasto' | 'carroFogon' = 'todos';
+  let _busquedaPedidos = '';
 
   const CATEGORIAS = ['Pizzas', 'Calzones', 'Empanadas', 'Hamburguesas', 'Lomos', 'Otros'] as const;
 
@@ -198,7 +304,7 @@ import Layout from '../layouts/Layout.astro';
       { data: recetas },
       { data: recetaIngs },
       { data: ingredientes },
-      { data: pedidos },
+      { data: pedidosRaw },
       { data: ventasMes },
       { data: fijos },
       { data: variables },
@@ -209,7 +315,7 @@ import Layout from '../layouts/Layout.astro';
       db.from('recetas').select('id, nombre, precio_prepizza, precio_salsa, rend_tipo, rend_valor'),
       db.from('receta_ingredientes').select('*'),
       db.from('ingredientes').select('id, precio_kg, multiplo_rendimiento'),
-      loadOrEmpty('pedidos', () => db.from('pedidos').select('productos').gte('fecha', `${mesActual}-01`).lt('fecha', getNextMonth(mesActual))),
+      loadOrEmpty('pedidos', () => db.from('pedidos').select('id, numero_pedido, nombre_cliente, telefono_cliente, direccion, productos, total, total_con_descuento, status, estado, fecha, created_at, external_reference, proveedor_pago, email_cliente').gte('fecha', `${mesActual}-01`).lt('fecha', getNextMonth(mesActual)).order('fecha', { ascending: false })),
       loadOrEmpty('ventas_mes', () => db.from('ventas_mes').select('*').eq('mes', mesActual)),
       db.from('costos_fijos').select('monto').eq('activo', true),
       db.from('costos_variables').select('monto_referencia'),
@@ -217,21 +323,100 @@ import Layout from '../layouts/Layout.astro';
       loadOrEmpty('gastos', () => db.from('gastos').select('*').gte('fecha', `${mesActual}-01`).lt('fecha', getNextMonth(mesActual)).order('fecha', { ascending: false })),
     ]);
 
-    // ─── Cargar unidades desde pedidos (Impasto / CarroFogon) ───
-    const unidadesFogon = new Map<string, number>(); // precio_venta_id → cantidad
-    for (const ped of (pedidos ?? [])) {
+    // ─── Procesar y Clasificar Pedidos (Impasto vs carroFogon) ───
+    pedidosData = [];
+    const unidadesTotalMap = new Map<string, number>();
+    const unidadesImpastoMap = new Map<string, number>();
+    const unidadesFogonMap = new Map<string, number>();
+
+    let countImpasto = 0;
+    let countFogon = 0;
+    let unitsImpasto = 0;
+    let unitsFogon = 0;
+    let factImpasto = 0;
+    let factFogon = 0;
+
+    for (const ped of (pedidosRaw ?? [])) {
       if (ped.status === 'cancelado' || ped.estado === 'cancelado') continue;
+
+      const ref = String(ped.external_reference || '');
+      const prov = String(ped.proveedor_pago || '');
+      const email = String(ped.email_cliente || '');
       const prods = typeof ped.productos === 'string' ? JSON.parse(ped.productos) : (ped.productos ?? []);
+
+      const hasImpastoRef = ref.startsWith('IM-');
+      const hasEmail = email.trim().length > 0;
+      const hasProveedor = prov.trim().length > 0;
+      const hasNameProp = prods.length > 0 && ('name' in prods[0] || 'price' in prods[0]);
+
+      const canal: 'Impasto' | 'carroFogon' = (hasImpastoRef || hasEmail || hasProveedor || hasNameProp) ? 'Impasto' : 'carroFogon';
+      const numStr = ref || (ped.numero_pedido ? `#${ped.numero_pedido}` : '—');
+      const totalPed = Number(ped.total_con_descuento ?? ped.total ?? 0);
+
+      const itemsParsed: Array<{ name: string; qty: number; price: number }> = [];
       for (const p of prods) {
-        const name = p.nombre || p.name || '';
+        const name = String(p.nombre || p.name || 'Producto');
         const qty = Number(p.cantidad ?? p.qty ?? 1);
+        const price = Number(p.precio ?? p.price ?? 0);
+        itemsParsed.push({ name, qty, price });
+
         const key = normalizarNombre(name);
-        if (key) unidadesFogon.set(key, (unidadesFogon.get(key) ?? 0) + qty);
+        if (key) {
+          unidadesTotalMap.set(key, (unidadesTotalMap.get(key) ?? 0) + qty);
+          if (canal === 'Impasto') {
+            unidadesImpastoMap.set(key, (unidadesImpastoMap.get(key) ?? 0) + qty);
+          } else {
+            unidadesFogonMap.set(key, (unidadesFogon.get(key) ?? 0) + qty);
+          }
+        }
       }
+
+      const totalItemsQty = itemsParsed.reduce((acc, i) => acc + i.qty, 0);
+
+      if (canal === 'Impasto') {
+        countImpasto++;
+        unitsImpasto += totalItemsQty;
+        factImpasto += totalPed;
+      } else {
+        countFogon++;
+        unitsFogon += totalItemsQty;
+        factFogon += totalPed;
+      }
+
+      pedidosData.push({
+        id: String(ped.id || ''),
+        numero: numStr,
+        canal,
+        fecha: ped.fecha || (ped.created_at ? String(ped.created_at).slice(0, 10) : '—'),
+        cliente: String(ped.nombre_cliente || 'Sin nombre'),
+        telefono: String(ped.telefono_cliente || ''),
+        direccion: String(ped.direccion || ''),
+        items: itemsParsed,
+        itemsText: itemsParsed.map(i => `${i.qty}× ${i.name}`).join(', '),
+        total: totalPed,
+        status: String(ped.status || ped.estado || 'normal'),
+      });
     }
 
-    // ─── Unidades manuales guardadas (ventas_mes tiene prioridad) ───
-    const unidadesManual = new Map<string, number>(); // precio_venta_id → unidades
+    // Actualizar métricas de canales en UI
+    document.getElementById('chan-impasto-pedidos')!.textContent = `${countImpasto} pedidos`;
+    document.getElementById('chan-impasto-units')!.textContent = String(unitsImpasto);
+    document.getElementById('chan-impasto-fact')!.textContent = fmt(factImpasto);
+
+    document.getElementById('chan-fogon-pedidos')!.textContent = `${countFogon} pedidos`;
+    document.getElementById('chan-fogon-units')!.textContent = String(unitsFogon);
+    document.getElementById('chan-fogon-fact')!.textContent = fmt(factFogon);
+
+    const countTotal = countImpasto + countFogon;
+    const unitsTotal = unitsImpasto + unitsFogon;
+    const factTotal = factImpasto + factFogon;
+    document.getElementById('chan-total-pedidos')!.textContent = `${countTotal} pedidos`;
+    document.getElementById('chan-total-units')!.textContent = String(unitsTotal);
+    document.getElementById('chan-total-fact')!.textContent = fmt(factTotal);
+    document.getElementById('badge-pedidos-count')!.textContent = `${countTotal} pedidos`;
+
+    // ─── Unidades manuales guardadas (ventas_mes) ───
+    const unidadesManual = new Map<string, number>();
     for (const v of (ventasMes ?? [])) {
       unidadesManual.set(v.precio_venta_id, v.unidades);
     }
@@ -257,13 +442,7 @@ import Layout from '../layouts/Layout.astro';
     }
 
     // ─── Armar productos con costos y asignar unidades ───
-    // Prioridad: ventas_mes (manual) > pedidos carroFogon (automático)
     productosVenta = [];
-    const nombreNormToPid = new Map<string, string>(); // nombre_normalizado → precio_venta_id
-    for (const item of (precios ?? [])) {
-      nombreNormToPid.set(normalizarNombre(item.nombre), item.id);
-    }
-
     for (const item of (precios ?? [])) {
       const receta = item.receta_id ? recetasMap.get(item.receta_id) : null;
       let costoUnit = 0;
@@ -297,11 +476,14 @@ import Layout from '../layouts/Layout.astro';
       const costoReal = calcCostoRealTotal(costoUnit, costoOpUnit);
       const precioVenta = calcPrecioEfectivo(costoReal, Number(item.markup) || 1);
 
-      // Unidades: manual (ventas_mes) > automático (pedidos carroFogon) > 0
+      const normName = normalizarNombre(item.nombre);
+      const uImpasto = unidadesImpastoMap.get(normName) ?? 0;
+      const uFogon = unidadesFogonMap.get(normName) ?? 0;
+
+      // Unidades: manual (ventas_mes) > automático (pedidos) > 0
       let unidades = unidadesManual.get(item.id);
       if (unidades === undefined) {
-        const fogonCant = unidadesFogon.get(normalizarNombre(item.nombre));
-        unidades = fogonCant ?? 0;
+        unidades = unidadesTotalMap.get(normName) ?? 0;
       }
 
       productosVenta.push({
@@ -315,26 +497,27 @@ import Layout from '../layouts/Layout.astro';
         precioVenta,
         markup: item.markup,
         unidades,
+        unidadesImpasto: uImpasto,
+        unidadesCarroFogon: uFogon,
       });
     }
 
     // Gastos
     gastosData = gastosRows ?? [];
 
-    // ─── Status de carga automática ───
-    _totalPedidos = (pedidos ?? []).length;
-    _totalMatcheados = productosVenta.filter(p => p.unidades > 0 && unidadesManual.get(p.id) === undefined).length;
+    // ─── Status de sincronización ───
     const statusEl = document.getElementById('carrofogon-status')!;
-    if (_totalPedidos > 0) {
+    if (countTotal > 0) {
       const conManual = (ventasMes ?? []).length > 0;
       statusEl.classList.remove('hidden');
-      let msg = `<span class="text-blue-400">📦 ${_totalPedidos} pedidos en CarroFogon · ${_totalMatcheados} productos sincronizados</span>`;
+      let msg = `<span class="text-blue-400">📦 ${countTotal} pedidos sincronizados (${countImpasto} 🍕 Impasto · ${countFogon} 📲 carroFogon)</span>`;
       if (conManual) msg += `<span class="text-text-muted ml-2">| Algunas unidades tienen ajuste manual</span>`;
       statusEl.innerHTML = msg;
     } else {
       statusEl.classList.add('hidden');
     }
 
+    renderPedidosLista();
     renderVentas();
     renderGastos();
     actualizarResumen();
@@ -355,6 +538,84 @@ import Layout from '../layouts/Layout.astro';
     }
   }
 
+  // ─── Render lista de pedidos / comandas ───
+  function renderPedidosLista() {
+    const tbody = document.getElementById('tbody-pedidos-lista')!;
+    let filtrados = pedidosData;
+
+    if (_filtroCanal !== 'todos') {
+      filtrados = filtrados.filter(p => p.canal === _filtroCanal);
+    }
+
+    if (_busquedaPedidos.trim()) {
+      const q = _busquedaPedidos.toLowerCase().trim();
+      filtrados = filtrados.filter(p =>
+        p.numero.toLowerCase().includes(q) ||
+        p.cliente.toLowerCase().includes(q) ||
+        p.telefono.toLowerCase().includes(q) ||
+        p.itemsText.toLowerCase().includes(q)
+      );
+    }
+
+    if (filtrados.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-text-muted text-xs">No se encontraron pedidos con los filtros aplicados.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = filtrados.map(p => {
+      const isImpasto = p.canal === 'Impasto';
+      const badgeCls = isImpasto
+        ? 'bg-orange-500/20 text-orange-400 border-orange-500/30'
+        : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
+      const badgeIcon = isImpasto ? '🍕' : '📲';
+      const badgeLabel = isImpasto ? 'Impasto Web' : 'carroFogon';
+
+      return `
+        <tr class="border-b border-dark-border/20 hover:bg-dark-surface/30">
+          <td class="p-3">
+            <span class="inline-flex items-center gap-1 text-[0.65rem] font-semibold px-2 py-0.5 rounded-full border ${badgeCls}">
+              <span>${badgeIcon}</span> ${badgeLabel}
+            </span>
+          </td>
+          <td class="p-3 font-mono font-bold text-text-main">${escapeHtml(p.numero)}</td>
+          <td class="p-3 text-text-muted whitespace-nowrap">${p.fecha}</td>
+          <td class="p-3">
+            <div class="font-medium text-text-main">${escapeHtml(p.cliente)}</div>
+            ${p.telefono ? `<div class="text-[0.65rem] text-text-muted">${escapeHtml(p.telefono)}</div>` : ''}
+          </td>
+          <td class="p-3 text-text-muted max-w-xs truncate" title="${escapeHtml(p.itemsText)}">
+            ${escapeHtml(p.itemsText || '—')}
+          </td>
+          <td class="p-3 text-right font-mono font-bold text-emerald-400 whitespace-nowrap">${fmt(p.total)}</td>
+          <td class="p-3 text-center">
+            <span class="text-[0.6rem] px-2 py-0.5 rounded bg-dark-surface text-text-muted border border-dark-border/40 uppercase">
+              ${escapeHtml(p.status)}
+            </span>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  // Filtros de canal en comandas
+  document.querySelectorAll('.btn-filter-canal').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      document.querySelectorAll('.btn-filter-canal').forEach(b => {
+        b.className = 'px-2.5 py-1 rounded font-medium text-text-muted hover:text-text-main transition-all btn-filter-canal';
+      });
+      const el = e.currentTarget as HTMLElement;
+      el.className = 'px-2.5 py-1 rounded font-medium transition-all bg-emerald-500/20 text-emerald-400 btn-filter-canal';
+      _filtroCanal = el.dataset.canal as any;
+      renderPedidosLista();
+    });
+  });
+
+  // Buscador de comandas
+  document.getElementById('inp-search-pedidos')?.addEventListener('input', (e) => {
+    _busquedaPedidos = (e.target as HTMLInputElement).value;
+    renderPedidosLista();
+  });
+
   // ─── Render ventas ───
   function renderVentas() {
     const porCategoria = new Map<string, any[]>();
@@ -367,7 +628,6 @@ import Layout from '../layouts/Layout.astro';
     let html = '';
     for (const cat of CATEGORIAS) {
       const filas = porCategoria.get(cat)!;
-      // Solo mostrar productos con ventas (o todos si toggle activo)
       const conVentas = _mostrarTodos ? filas : filas.filter(p => p.unidades > 0);
       if (conVentas.length === 0) continue;
 
@@ -378,7 +638,6 @@ import Layout from '../layouts/Layout.astro';
         </td>
       </tr>`;
 
-      // Ordenar por unidades vendidas descendente
       const ordenadas = [...conVentas].sort((a, b) => b.unidades - a.unidades);
 
       for (const p of ordenadas) {
@@ -398,6 +657,13 @@ import Layout from '../layouts/Layout.astro';
             <input type="number" min="0" step="1" value="${p.unidades}"
               data-pid="${p.id}"
               class="w-20 bg-dark-bg border border-dark-border rounded-lg px-2 py-1 text-right text-accent-gold text-sm focus:ring-1 focus:ring-accent-amber/50 outline-none inp-unidades">
+            ${(p.unidadesImpasto > 0 || p.unidadesCarroFogon > 0) ? `
+              <div class="text-[0.6rem] text-text-muted mt-1 whitespace-nowrap">
+                ${p.unidadesImpasto > 0 ? `<span class="text-orange-400 font-medium">🍕 ${p.unidadesImpasto}</span>` : ''}
+                ${(p.unidadesImpasto > 0 && p.unidadesCarroFogon > 0) ? ' · ' : ''}
+                ${p.unidadesCarroFogon > 0 ? `<span class="text-emerald-400 font-medium">📲 ${p.unidadesCarroFogon}</span>` : ''}
+              </div>
+            ` : ''}
           </td>
           <td class="p-3 text-right text-emerald-400 font-bold font-mono">${fmt(facturacion)}</td>
           <td class="p-3 text-right text-emerald-400 font-bold font-mono">${fmt(ganancia)}</td>
@@ -405,7 +671,7 @@ import Layout from '../layouts/Layout.astro';
       }
     }
 
-    document.getElementById('tbody-ventas')!.innerHTML = html || '<tr><td colspan="7" class="p-6 text-center text-text-muted text-sm">Sin ventas este mes. Cargá desde CarroFogon o ingresá unidades manualmente.</td></tr>';
+    document.getElementById('tbody-ventas')!.innerHTML = html || '<tr><td colspan="7" class="p-6 text-center text-text-muted text-sm">Sin ventas este mes. Se sincronizarán automáticamente de Impasto y carroFogon.</td></tr>';
 
     // Event listeners
     document.querySelectorAll('.inp-unidades').forEach(inp => {
@@ -416,7 +682,6 @@ import Layout from '../layouts/Layout.astro';
         const p = productosVenta.find(x => x.id === pid);
         if (p) {
           p.unidades = val;
-          // Re-render para reordenar
           renderVentas();
           renderRanking();
           actualizarResumen();
@@ -459,7 +724,6 @@ import Layout from '../layouts/Layout.astro';
       </tr>`;
     }).join('');
 
-    // Totales del ranking
     const totalUnidades = vendidos.reduce((a, p) => a + p.unidades, 0);
     const totalFacturacion = vendidos.reduce((a, p) => a + p.precioVenta * p.unidades, 0);
     const totalGanancia = vendidos.reduce((a, p) => a + (p.precioVenta - p.costoReal) * p.unidades, 0);
@@ -539,7 +803,6 @@ import Layout from '../layouts/Layout.astro';
     const inserts: any[] = [];
     const updates: { id: string; unidades: number }[] = [];
 
-    // Cargar IDs existentes de ventas_mes
     const { data: existing } = await db.from('ventas_mes').select('id, precio_venta_id').eq('mes', mesActual);
     const existingMap = new Map((existing ?? []).map((v: any) => [v.precio_venta_id, v.id]));
 
@@ -563,11 +826,10 @@ import Layout from '../layouts/Layout.astro';
     alert('Ventas guardadas ✓');
   });
 
-  // ─── Cargar ventas desde CarroFogon (tabla pedidos) ───
   function normalizarNombre(n: string): string {
     return n.toLowerCase().trim()
       .replace(/\s+/g, ' ')
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, ''); // quita acentos
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   }
 
   document.getElementById('btn-cargar-carrofogon')!.addEventListener('click', async () => {
@@ -577,7 +839,6 @@ import Layout from '../layouts/Layout.astro';
     btn.textContent = 'Recargar datos';
   });
 
-  // ─── Toggle mostrar todos ───
   document.getElementById('btn-mostrar-todos')!.addEventListener('click', () => {
     _mostrarTodos = !_mostrarTodos;
     const btn = document.getElementById('btn-mostrar-todos')!;
@@ -585,7 +846,6 @@ import Layout from '../layouts/Layout.astro';
     renderVentas();
   });
 
-  // ─── Agregar gasto ───
   document.getElementById('btn-add-gasto')!.addEventListener('click', async () => {
     const concepto = prompt('Concepto del gasto:');
     if (!concepto?.trim()) return;
